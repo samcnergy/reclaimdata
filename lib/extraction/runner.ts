@@ -5,9 +5,10 @@ import { STORAGE_BUCKET } from "@/lib/storage/upload";
 import { EXTRACTION_MODEL, getAnthropicClient } from "./claude-client";
 import { estimateCostCents } from "./costs";
 import {
-  CONTRACT_EXTRACTION_SYSTEM_PROMPT,
+  DOCUMENT_EXTRACTION_SYSTEM_PROMPT,
   EMIT_DOCUMENT_TOOL,
-} from "./prompts/contract";
+} from "./prompts/document";
+import { toClaudeContent } from "./converters";
 import { extractedDocumentSchema, type ExtractedDocument } from "./schemas";
 
 const RAW_RESPONSE_BUCKET_PREFIX = "_extraction";
@@ -66,15 +67,16 @@ export async function runExtraction(args: {
   if (dlErr || !blob) {
     throw new Error(`Failed to download ${upload.storage_path}: ${dlErr?.message}`);
   }
-  const bytes = new Uint8Array(await blob.arrayBuffer());
-  const base64 = Buffer.from(bytes).toString("base64");
+  const bytes = Buffer.from(await blob.arrayBuffer());
 
-  // Build the user turn as a document (PDF) or image. Non-PDF / non-image
-  // files we surface as a TODO for M9 (the Word / Excel / plain-text path).
-  const userContent = buildDocumentContent(upload.mime_type, base64);
-  if (!userContent) {
+  const converted = await toClaudeContent({
+    mimeType: upload.mime_type,
+    filename: upload.filename,
+    bytes,
+  });
+  if (!converted) {
     throw new Error(
-      `MIME type ${upload.mime_type} not supported in milestone 8 (contracts-only PDFs/images). Word / Excel / text fallback lands in milestone 9.`,
+      `MIME type ${upload.mime_type} is not supported by the extraction pipeline.`,
     );
   }
 
@@ -84,7 +86,7 @@ export async function runExtraction(args: {
     system: [
       {
         type: "text",
-        text: CONTRACT_EXTRACTION_SYSTEM_PROMPT,
+        text: DOCUMENT_EXTRACTION_SYSTEM_PROMPT,
         cache_control: { type: "ephemeral" },
       },
     ],
@@ -94,7 +96,7 @@ export async function runExtraction(args: {
       {
         role: "user",
         content: [
-          userContent,
+          converted.block,
           {
             type: "text",
             text: "Extract everything you can cleanly identify from this document. Emit exactly one call to the emit_document tool.",
@@ -151,31 +153,4 @@ export async function runExtraction(args: {
   }
 
   return { extractionRunId: runId, extracted: parsed, usage, costCents, durationMs };
-}
-
-import type Anthropic from "@anthropic-ai/sdk";
-
-function buildDocumentContent(
-  mimeType: string,
-  base64: string,
-): Anthropic.ContentBlockParam | null {
-  if (mimeType === "application/pdf") {
-    return {
-      type: "document",
-      source: { type: "base64", media_type: "application/pdf", data: base64 },
-    };
-  }
-  if (mimeType === "image/jpeg" || mimeType === "image/png" || mimeType === "image/webp") {
-    return {
-      type: "image",
-      source: { type: "base64", media_type: mimeType, data: base64 },
-    };
-  }
-  if (mimeType === "image/gif") {
-    return {
-      type: "image",
-      source: { type: "base64", media_type: "image/gif", data: base64 },
-    };
-  }
-  return null;
 }

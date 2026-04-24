@@ -43,11 +43,20 @@ async function main() {
   try {
     const bytes = readFileSync(fixturePath);
     const filename = basename(fixturePath);
-    const mimeType = filename.toLowerCase().endsWith(".pdf")
-      ? "application/pdf"
-      : filename.match(/\.(png|jpg|jpeg|webp)$/i)
-        ? `image/${filename.split(".").pop()!.toLowerCase().replace("jpg", "jpeg")}`
-        : "application/octet-stream";
+    const ext = filename.toLowerCase().split(".").pop() ?? "";
+    const mimeType = ({
+      pdf: "application/pdf",
+      png: "image/png",
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      webp: "image/webp",
+      csv: "text/csv",
+      txt: "text/plain",
+      md: "text/markdown",
+      docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      xls: "application/vnd.ms-excel",
+    } as Record<string, string>)[ext] ?? "application/octet-stream";
     const storagePath = buildStoragePath(workspaceId, uploadId, filename);
 
     console.log(`Uploading ${filename} (${bytes.length} bytes, ${mimeType}) to ${storagePath}`);
