@@ -1,10 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { Mail } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BuildListButton } from "@/components/app/build-list-button";
+import { EmailConnectionCard } from "@/components/app/email-connection-card";
 import { UploadDropzone } from "@/components/app/upload-dropzone";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getActiveWorkspaceContext } from "@/lib/workspaces/active";
@@ -31,11 +29,21 @@ export default async function UploadPage() {
   const ctx = await getActiveWorkspaceContext();
 
   const supabase = await createSupabaseServerClient();
-  const { data: uploads } = await supabase
-    .from("uploads")
-    .select("id, filename, mime_type, size_bytes, status, uploaded_at")
-    .order("uploaded_at", { ascending: false })
-    .limit(20);
+  const [{ data: uploads }, { data: emailConnection }] = await Promise.all([
+    supabase
+      .from("uploads")
+      .select("id, filename, mime_type, size_bytes, status, uploaded_at")
+      .order("uploaded_at", { ascending: false })
+      .limit(20),
+    supabase
+      .from("email_connections")
+      .select("id, email_address, last_sync_at")
+      .eq("workspace_id", ctx.workspace.id)
+      .eq("provider", "gmail")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
   const canBuild = (uploads?.length ?? 0) > 0;
 
@@ -71,24 +79,12 @@ export default async function UploadPage() {
             Connect Gmail and we'll pull customer contacts from your sent
             folder.
           </p>
-          <Card className="mt-6 border-dashed">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base font-medium">
-                <Mail className="h-4 w-4 text-accent" strokeWidth={1.75} />
-                Gmail
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm text-muted-foreground">
-              <p>
-                We read contact and contract info only. We never send email,
-                and we never store full message bodies beyond what's needed
-                for extraction.
-              </p>
-              <Button variant="outline" disabled className="w-full">
-                Connect — coming in the next release
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="mt-6">
+            <EmailConnectionCard
+              workspaceId={ctx.workspace.id}
+              connection={emailConnection ?? null}
+            />
+          </div>
         </section>
       </div>
 
