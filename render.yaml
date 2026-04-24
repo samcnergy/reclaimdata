@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: reclaimdata
+    runtime: node
+    plan: starter
+    region: oregon
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      # All other env vars (Supabase, Anthropic, Square, Brevo, etc.)
+      # are set manually in the Render dashboard. See .env.example.
