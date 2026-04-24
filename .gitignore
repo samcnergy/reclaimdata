@@ -34,6 +34,11 @@ yarn-error.log*
 .env*
 !.env.example
 
+# secrets folder (sibling dir — belt-and-suspenders protection)
+reclaimdata-secrets/
+.env.local
+.env*.local
+
 # drizzle
 /drizzle/meta
 

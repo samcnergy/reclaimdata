@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
-    "db:push": "drizzle-kit push",
+    "db:apply": "tsx scripts/apply-migrations.ts",
+    "db:verify": "tsx scripts/verify-schema.ts",
+    "db:test-isolation": "tsx scripts/test-tenant-isolation.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
