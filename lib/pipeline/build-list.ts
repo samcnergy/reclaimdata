@@ -23,6 +23,7 @@ import postgres from "postgres";
 
 import { findFuzzyMatch, findStrongMatch } from "@/lib/dedupe/matcher";
 import { normalizeAddress } from "@/lib/normalization/address";
+import { validateWorkspace, type ValidationStats } from "@/lib/pipeline/validate";
 import { normalizeEmail } from "@/lib/normalization/email";
 import { normalizeIsoDate } from "@/lib/normalization/date";
 import { normalizeName } from "@/lib/normalization/name";
@@ -44,6 +45,7 @@ export type BuildListStats = {
   customersMerged: number;
   candidatesQueued: number;
   contractsCreated: number;
+  validation: ValidationStats;
 };
 
 export async function buildClientList(args: {
@@ -57,6 +59,7 @@ export async function buildClientList(args: {
     customersMerged: 0,
     candidatesQueued: 0,
     contractsCreated: 0,
+    validation: { phonesChecked: 0, emailsChecked: 0, addressesChecked: 0 },
   };
 
   try {
@@ -114,6 +117,14 @@ export async function buildClientList(args: {
         }
       }
     }
+
+    // Stage 4: validate every new phone / email / address against Twilio,
+    // ZeroBounce, and USPS. Validation happens after materialization so
+    // the DB is coherent even if one of the providers is throttled.
+    stats.validation = await validateWorkspace({
+      sql,
+      workspaceId: args.workspaceId,
+    });
 
     return stats;
   } finally {
