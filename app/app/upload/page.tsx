@@ -4,6 +4,7 @@ import { Mail } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BuildListButton } from "@/components/app/build-list-button";
 import { UploadDropzone } from "@/components/app/upload-dropzone";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getActiveWorkspaceContext } from "@/lib/workspaces/active";
@@ -145,11 +146,7 @@ export default async function UploadPage() {
               duplicates.
             </p>
           </div>
-          <Button variant="accent" size="lg" disabled={!canBuild}>
-            {canBuild
-              ? "Build my client list"
-              : "Upload a file first"}
-          </Button>
+          <BuildListButton workspaceId={ctx.workspace.id} disabled={!canBuild} />
         </div>
       </section>
     </div>
