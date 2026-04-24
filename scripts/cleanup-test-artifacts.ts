@@ -15,7 +15,7 @@ import { config } from "dotenv";
 import postgres from "postgres";
 import { createClient } from "@supabase/supabase-js";
 
-config({ path: ".env.local" });
+config({ path: ".env.local", override: true });
 
 const email = process.argv[2];
 if (!email) {

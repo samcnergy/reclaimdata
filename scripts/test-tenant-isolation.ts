@@ -14,7 +14,7 @@ import { config } from "dotenv";
 import postgres from "postgres";
 import { randomUUID } from "node:crypto";
 
-config({ path: ".env.local" });
+config({ path: ".env.local", override: true });
 
 const sql = postgres(process.env.SUPABASE_DB_URL!, { max: 1, prepare: false });
 

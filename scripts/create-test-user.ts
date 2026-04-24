@@ -1,7 +1,7 @@
 import { config } from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 
-config({ path: ".env.local" });
+config({ path: ".env.local", override: true });
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,

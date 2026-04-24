@@ -16,7 +16,7 @@ import { join } from "node:path";
 import { config } from "dotenv";
 import postgres from "postgres";
 
-config({ path: ".env.local" });
+config({ path: ".env.local", override: true });
 config({ path: ".env" });
 
 const connectionString = process.env.SUPABASE_DB_URL;

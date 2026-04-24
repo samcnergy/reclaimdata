@@ -2,7 +2,7 @@ import { config } from "dotenv";
 import { defineConfig } from "drizzle-kit";
 
 // Load .env.local (preferred, gitignored) then fall back to .env.
-config({ path: ".env.local" });
+config({ path: ".env.local", override: true });
 config({ path: ".env" });
 
 export default defineConfig({
