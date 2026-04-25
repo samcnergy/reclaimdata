@@ -6,103 +6,220 @@ Reclaim Data turns decades of paper contracts, Word documents, scanned PDFs,
 spreadsheets, and emails into a clean, validated, marketable customer
 database. A ReTHINK CNERGY product.
 
+Live: https://reclaimdata.ai (production) — https://reclaimdata.onrender.com (Render service).
+
 ## Stack
 
-- **Next.js 16** (App Router, RSC, TypeScript strict) — single app serving both marketing routes and the auth-gated `/app` product
+- **Next.js 16** (App Router, RSC, TypeScript strict, Turbopack) — single app for marketing + auth-gated `/app/*`
 - **Tailwind CSS v4** with brand tokens in `app/globals.css`
 - **shadcn/ui** (Radix primitives, new-york style)
 - **Supabase** — Auth, Postgres, Storage (one vendor, one bill)
-- **Drizzle ORM** against Supabase Postgres (with RLS enforced in SQL)
-- **Inngest** — background job orchestration (extraction pipeline, validation, audit)
-- **Anthropic Claude Sonnet 4.6** — structured extraction via tool use
-- **Google Document AI** — OCR fallback for low-quality scans
-- **Twilio Lookup** / **ZeroBounce** / **Smarty** — phone / email / address validation
-- **Brevo** — transactional email (magic links, audit-complete notifications)
-- **Square Subscriptions** — billing (custom in-app portal, no hosted portal)
-- **PostHog** + **Plausible** — product & marketing analytics
-- **Sentry** — error tracking
+- **Drizzle ORM** against Supabase Postgres with hand-written RLS in SQL
+- **Inngest** — background pipeline (extraction, validation, audit)
+- **Anthropic Claude Sonnet 4.6** — structured extraction via tool use with strict schema + prompt caching
+- **Twilio Lookup** / **ZeroBounce** / **USPS** — phone / email / address validation
+- **Brevo** — transactional email
+- **Square Subscriptions** — billing (custom in-app portal)
+- **PostHog** + **Sentry** — analytics + error tracking
 - **Render** — deploy target
 
-> **Architectural note:** the build prompt specified Next.js 15. This scaffold
-> uses Next 16 (current stable as of 2026-04). Next 16 is backward-compatible
-> with Next 15 App Router conventions. Downgrade by pinning `next@15.x` in
-> `package.json` if required.
+> Architectural note: prompt named Next 15. Scaffold uses Next 16 (current
+> stable on 2026-04). Backward compatible with Next 15 App Router conventions.
 
-## Getting started
+## Quick start (local)
 
 ```bash
-cp .env.example .env.local
-# Fill in Supabase URL + anon key at minimum
+git clone https://github.com/samcnergy/reclaimdata.git
+cd reclaimdata
 npm install
-npm run dev
+
+# .env.local ships with bare names mapped from the ledger's _DEV values.
+# It's gitignored; the canonical ledger lives at ~/reclaimdata-secrets/.env.local.
+
+npm run dev    # http://localhost:3000
 ```
-
-Open http://localhost:3000.
-
-## Setup checklist (before first real use)
-
-External accounts to provision:
-
-1. **Supabase** — project, URL + anon key + service role + pooler DB URL. Create Storage bucket `reclaimdata-uploads` (private).
-2. **Anthropic** — API key with Sonnet 4.6 access.
-3. **Google Cloud** — Document AI processor + service-account JSON.
-4. **Twilio** — Account SID + auth token (Lookup API enabled).
-5. **ZeroBounce** — API key.
-6. **Smarty** — US Street API credentials.
-7. **Brevo** — API key + verified sender domain (`reclaimdata.ai` with SPF, DKIM, DMARC).
-8. **Inngest** — app + event/signing keys.
-9. **Google OAuth** — client ID + secret (scope: `gmail.readonly`).
-10. **Square** — sandbox + production credentials, subscription plans for Starter / Professional / Legacy × monthly + annual, webhook signature key.
-11. **PostHog** — project API key.
-12. **Sentry** — DSN.
-13. **OAuth token encryption key** — `openssl rand -hex 32`.
 
 ## Scripts
 
 ```bash
-npm run dev     # Next.js dev server
-npm run build   # Production build
-npm start       # Production server
-npm run lint    # ESLint
+npm run dev               # Next dev server
+npm run build             # production build (also runs TS strict typecheck)
+npm start                 # production server (expects build)
+npm run lint              # ESLint
+
+npm run db:generate       # drizzle-kit generate from lib/db/schema.ts
+npm run db:apply          # idempotent: applies new migrations + RLS via journal
+npm run db:verify         # counts tables, lists policies, checks auth trigger
+npm run db:test-isolation # 4-check tenant isolation smoke test against DEV
 ```
 
-Drizzle (populated in milestone 2):
+Operational helpers under `scripts/`:
 
 ```bash
-npx drizzle-kit generate  # generate SQL migrations from schema
-npx drizzle-kit push      # apply migrations to Supabase DB
+npx tsx scripts/create-test-user.ts <email> create|delete
+npx tsx scripts/inspect-waitlist.ts [email] [--delete]
+npx tsx scripts/cleanup-test-artifacts.ts <email>
+npx tsx scripts/bootstrap-square-plans.ts          # creates the 6 plan variations
+npx tsx scripts/smoke-test-extraction.ts <file>    # extract a single doc
+npx tsx scripts/smoke-test-pipeline.ts <file>      # extraction → build-list end-to-end
 ```
 
 ## Repository layout
 
 ```
-app/                # Next.js App Router
-  (marketing)/      # public marketing routes
-  (auth)/           # login/signup
-  app/              # auth-gated product surfaces
-  api/              # route handlers
+app/
+  (marketing)/           # /, /how-it-works, /pricing, /about, legal placeholders
+  (auth)/                # /login, /signup
+  app/                   # auth-gated /app/* — dashboard, upload, customers, audit, settings
+  api/                   # route handlers (waitlist, uploads, build-list, audit, square, email)
+  auth/callback/         # Supabase Auth + magic-link callback
+  auth/sign-out/         # POST → signOut + redirect to /
+  error.tsx              # client error boundary
+  not-found.tsx          # 404
+  robots.ts + sitemap.ts # SEO
+
 components/
-  ui/               # shadcn primitives
-  marketing/        # landing-page sections
-  app/              # product components (drawer, table, dropzone, etc.)
+  ui/                    # shadcn primitives (Button, Input, Label, Textarea, Card, Badge, Dialog)
+  marketing/             # landing-page sections + footer/header
+  app/                   # in-app components (sidebar, dropzone, customer table, …)
+  shared/
+
 lib/
-  supabase/         # browser + server + admin clients
-  db/               # Drizzle client + schema + RLS policies
-  extraction/       # Claude prompts, schemas, OCR
-  validation/       # Twilio / ZeroBounce / Smarty wrappers
-  inngest/          # background job definitions
-  square/           # subscription lifecycle helpers
-  brevo/            # transactional email helpers
-drizzle/            # generated migrations + hand-written RLS SQL
-public/             # static assets
+  audit/                 # /app/audit pipeline
+  auth/                  # requireUser, getAuthUser
+  billing/               # Plan rules, limit enforcement
+  brevo/                 # transactional email
+  crypto/encrypt.ts      # AES-256-GCM for OAuth refresh tokens
+  customers/queries.ts   # list + detail queries
+  db/                    # Drizzle client + schema + RLS SQL
+  dedupe/matcher.ts      # E.164 / email exact + pg_trgm fuzzy
+  extraction/            # Claude client, prompts, schemas, runner, converters
+  gmail/                 # Gmail v1 client + sent-folder sync
+  inngest/               # client + functions/{extraction-file-process, pipeline-build-list, extraction-email-sync}
+  normalization/         # phone (libphonenumber-js), email, name, address, date
+  oauth/google.ts        # Google OAuth helpers
+  pipeline/              # build-list orchestrator + Stage 4 validate
+  rate-limit.ts          # in-memory fixed-window limiter
+  scoring/               # health + confidence
+  security/              # CSP headers, Sentry scrubbers
+  square/                # client + webhook signature verify
+  storage/upload.ts      # path layout + size + MIME caps
+  supabase/              # browser + server + admin clients + middleware
+  validation/            # Twilio, ZeroBounce, USPS
+  workspaces/            # active context, queries, race-safe bootstrap
+
+drizzle/
+  0000_initial_schema.sql        # generated by drizzle-kit
+  0001_enable_pg_trgm.sql        # extension + dedupe indexes
+  0002_ensure_default_workspace.sql  # advisory-locked bootstrap function
+
+scripts/                 # operational + smoke-test helpers
+proxy.ts                 # Next 16 proxy: refreshes Supabase session + applies CSP
+sentry.{server,client,edge}.config.ts   # Sentry init for each runtime
+docs/render-env-vars.md  # canonical mapping of bare names → ledger _PROD values
+CLAUDE.md                # conventions, deviations from build prompt, multi-tenancy model
 ```
 
-## Build milestones
+## Pre-launch checklist
 
-This scaffold is **milestone 1** of 18. Subsequent milestones add schema + RLS,
-marketing pages, waitlist, auth, upload pipeline, extraction, validation,
-client list UI, audit report, Gmail sync, billing, security hardening, and
-polish — each committed and pushed independently.
+The work below is needed before flipping any of the public-facing toggles.
+Most items are spelled out in `~/reclaimdata-secrets/SETUP_LOG.md` "Post-
+launch follow-ups" — this section is the consolidated punch list.
+
+### 1. Provision the production data plane
+
+- [ ] Apply migrations + RLS to the **prod** Supabase project:
+  `SUPABASE_DB_URL=<prod pooler URL> npm run db:apply`
+- [ ] Run `npm run db:verify` against prod to confirm RLS is on every
+  tenant-scoped table.
+- [ ] Run `npm run db:test-isolation` against prod (set the prod URL).
+
+### 2. Square plan bootstrap (currently deferred)
+
+The 6 `SQUARE_PLAN_ID_*` env vars are placeholders. Run:
+
+```bash
+SQUARE_ENVIRONMENT=sandbox npx tsx scripts/bootstrap-square-plans.ts
+```
+
+The script writes IDs back to `~/reclaimdata-secrets/.env.local`. Paste
+them into Render's Environment tab on the production service.
+
+When ready to flip from sandbox to live: rerun with `SQUARE_ENVIRONMENT=production` against the live Square app.
+
+### 3. Render env vars
+
+`docs/render-env-vars.md` is the canonical mapping. For the production
+service, paste the `_PROD` values from the ledger into Render's UI.
+Mark Secret rows as Secret. Render auto-redeploys on push to main.
+
+### 4. Third-party tier upgrades
+
+- [ ] **Twilio**: upgrade trial → pay-as-you-go before any volume.
+- [ ] **ZeroBounce**: free tier is 100 credits/month. Buy ~$16 of credit
+  for 2,000 lookups before the first paying customer onboards.
+- [ ] **Anthropic**: spend cap currently $500/mo. Adjust if needed.
+- [ ] **Brevo**: domain authenticated (DKIM + DMARC passing) — confirm
+  for `reclaimdata.ai` periodically.
+
+### 5. Google OAuth verification
+
+The OAuth consent screen is currently in **Testing** status. Production
+Gmail users outside the test-user list cannot authorize. Before opening
+public Gmail-connect:
+
+- [ ] Switch app to Production in Google Auth Platform.
+- [ ] Submit for verification of the restricted `gmail.readonly` scope
+  (Google's review can take weeks — start early).
+
+### 6. Secret rotations
+
+These are recommended because the secrets passed through earlier
+session transcripts:
+
+- [ ] DB passwords (dev + prod) — rotate via Supabase → Settings →
+  Database → Reset password.
+- [ ] Supabase prod secret key — rotate via Settings → API Keys.
+- [ ] Google OAuth client secret — rotate via Google Auth Platform →
+  Clients.
+- [ ] Brevo API key — rotate via SMTP & API → API keys.
+- [ ] USPS client secret — rotate via USPS dev portal.
+- [ ] After each rotation, update both `~/reclaimdata-secrets/.env.local`
+  and the matching env var in Render.
+
+### 7. Legal copy
+
+- [ ] `/privacy`, `/terms`, `/dpa` ship with attorney-review banners. Get
+  reviewed text in place before public launch.
+
+### 8. Optional polish
+
+- [ ] Plausible — sign up and add `<script defer …>` to the marketing
+  layout if you want it alongside PostHog.
+- [ ] Sentry project rename — auto-named `javascript-nextjs`; rename to
+  `reclaimdata` (cosmetic).
+- [ ] Custom OG image in `public/og.png` (currently default).
+
+## Deploy
+
+The repo's `render.yaml` configures one production web service. On push
+to `main`, Render runs `npm ci && npm run build` and restarts the
+service. No manual deploy command needed.
+
+For a preview/staging service:
+
+1. Create a second Render web service pointed at a `preview` branch.
+2. Paste the `_DEV` values from the ledger.
+3. PR previews can target this service via Render's preview environments
+   feature.
+
+## Contributing
+
+Internal repo. PRs require:
+- `npm run build` clean (TypeScript strict + Next build)
+- `npm run db:test-isolation` passing if you've touched RLS
+- A new migration file (never edit an applied one — the journal will
+  reject it)
 
 ## License
 
