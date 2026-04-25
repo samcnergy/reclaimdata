@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { DeleteUploadButton } from "@/components/app/upload-row-actions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Upload history" };
@@ -49,6 +50,7 @@ export default async function UploadsHistoryPage() {
                 <th className="px-4 py-3 font-medium">Size</th>
                 <th className="px-4 py-3 font-medium">Uploaded</th>
                 <th className="px-4 py-3 font-medium">Status</th>
+                <th className="w-12 px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -79,6 +81,9 @@ export default async function UploadsHistoryPage() {
                         {u.error_message}
                       </p>
                     )}
+                  </td>
+                  <td className="px-2 py-2 text-right">
+                    <DeleteUploadButton uploadId={u.id} filename={u.filename} />
                   </td>
                 </tr>
               ))}

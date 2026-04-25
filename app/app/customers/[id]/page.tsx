@@ -14,6 +14,16 @@ import {
   DeleteCustomerButton,
   DoNotContactToggle,
 } from "@/components/app/customer-actions";
+import {
+  AddAddressButton,
+  AddEmailButton,
+  AddPhoneButton,
+  AddressRowActions,
+  ContractRowActions,
+  EditCustomerNameButton,
+  EmailRowActions,
+  PhoneRowActions,
+} from "@/components/app/customer-record-actions";
 import { getCustomerDetail } from "@/lib/customers/queries";
 import { getActiveWorkspaceContext } from "@/lib/workspaces/active";
 
@@ -50,9 +60,16 @@ export default async function CustomerDetailPage({
 
       <header className="mb-8 flex items-start justify-between gap-6">
         <div className="flex-1">
-          <h1 className="font-serif text-4xl font-medium text-foreground">
-            {displayName}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="font-serif text-4xl font-medium text-foreground">
+              {displayName}
+            </h1>
+            <EditCustomerNameButton
+              customerId={customer.id}
+              initialName={customer.name}
+              initialCompany={customer.company_name}
+            />
+          </div>
           {customer.company_name && (
             <p className="mt-1 text-lg text-muted-foreground">
               {customer.company_name}
@@ -97,7 +114,7 @@ export default async function CustomerDetailPage({
           <CardHeader>
             <CardTitle>Phones</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             {customer.phones.length === 0 ? (
               <p className="text-sm text-muted-foreground">No phones on file.</p>
             ) : (
@@ -119,10 +136,16 @@ export default async function CustomerDetailPage({
                       </p>
                     </div>
                     <ValidationPill kind="phone" status={p.validation_status} />
+                    <PhoneRowActions
+                      phoneId={p.id}
+                      rawValue={p.raw_value}
+                      isPrimary={p.id === customer.primary_phone_id}
+                    />
                   </li>
                 ))}
               </ul>
             )}
+            <AddPhoneButton customerId={customer.id} workspaceId={ctx.workspace.id} />
           </CardContent>
         </Card>
 
@@ -130,7 +153,7 @@ export default async function CustomerDetailPage({
           <CardHeader>
             <CardTitle>Emails</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             {customer.emails.length === 0 ? (
               <p className="text-sm text-muted-foreground">No emails on file.</p>
             ) : (
@@ -150,10 +173,16 @@ export default async function CustomerDetailPage({
                       </p>
                     </div>
                     <ValidationPill kind="email" status={e.validation_status} />
+                    <EmailRowActions
+                      emailId={e.id}
+                      rawValue={e.raw_value}
+                      isPrimary={e.id === customer.primary_email_id}
+                    />
                   </li>
                 ))}
               </ul>
             )}
+            <AddEmailButton customerId={customer.id} workspaceId={ctx.workspace.id} />
           </CardContent>
         </Card>
 
@@ -161,7 +190,7 @@ export default async function CustomerDetailPage({
           <CardHeader>
             <CardTitle>Addresses</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             {customer.addresses.length === 0 ? (
               <p className="text-sm text-muted-foreground">No addresses on file.</p>
             ) : (
@@ -184,10 +213,22 @@ export default async function CustomerDetailPage({
                       </p>
                     </div>
                     <ValidationPill kind="address" status={a.validation_status} />
+                    <AddressRowActions
+                      addressId={a.id}
+                      isPrimary={a.id === customer.primary_address_id}
+                      initial={{
+                        line1: a.line1,
+                        line2: a.line2,
+                        city: a.city,
+                        state: a.state,
+                        postalCode: a.postal_code,
+                      }}
+                    />
                   </li>
                 ))}
               </ul>
             )}
+            <AddAddressButton customerId={customer.id} workspaceId={ctx.workspace.id} />
           </CardContent>
         </Card>
 
@@ -217,6 +258,14 @@ export default async function CustomerDetailPage({
                       <div className="flex items-center gap-2">
                         <ConfidenceBadge score={c.confidence} />
                         <SourceLink refs={c.source_refs ?? []} />
+                        <ContractRowActions
+                          contractId={c.id}
+                          initial={{
+                            contractDate: c.contract_date,
+                            amountCents: c.amount_cents,
+                            scopeOfWork: c.scope_of_work,
+                          }}
+                        />
                       </div>
                     </div>
                     {c.line_items.length > 0 && (
