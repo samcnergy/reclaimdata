@@ -25,7 +25,11 @@ export const metadata: Metadata = {
   },
   description:
     "Turn decades of paper contracts, Word docs, scanned PDFs, spreadsheets, and emails into a clean, validated customer database you can actually market to.",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://reclaimdata.ai"),
+  metadataBase: new URL(
+    // `||` not `??` so an empty-string env var also falls back. Render's UI
+    // can quietly set "" when the value is cleared — `new URL("")` throws.
+    process.env.NEXT_PUBLIC_APP_URL || "https://reclaimdata.ai",
+  ),
   openGraph: {
     title: "Reclaim Data",
     description:
