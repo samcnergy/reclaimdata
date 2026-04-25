@@ -97,7 +97,7 @@ export async function validateWorkspace(args: {
     SELECT id, line1, line2, city, state, postal_code FROM addresses
     WHERE workspace_id = ${workspaceId}
       AND validation_status = 'unvalidated'
-      AND line1 IS NOT NULL
+      AND (line1 IS NOT NULL OR postal_code IS NOT NULL)
     LIMIT ${caps.addresses}
   `;
   for (const a of addresses) {
@@ -110,6 +110,10 @@ export async function validateWorkspace(args: {
     });
     const s = result.standardized;
     if (s) {
+      // USPS wins: when USPS resolved a value, overwrite ours. The model
+      // sometimes guesses ("RSM") or omits a field; the USPS canonical
+      // form is the source of truth. We only fall back to existing data
+      // for fields USPS didn't return.
       await sql`
         UPDATE addresses
         SET validation_status = ${result.status},
