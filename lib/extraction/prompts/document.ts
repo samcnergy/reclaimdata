@@ -26,9 +26,17 @@ Your job is to extract structured customer and contract data from ONE document a
 
 5. **Structure what's there, note what isn't.** If you see context that doesn't map to any structured field (e.g. handwritten margin notes like "call before 5pm", job-site landmarks, signs of a prior relationship, column headers that hint at context not captured in the schema), include it verbatim in the top-level \`notes\` string. Otherwise set \`notes\` to null.
 
+6. **One customer per billing party. Ship-to addresses, "Attn:" lines, project managers, and contact-on-jobsite notes are NOT separate customers.** They're attributes of the customer being billed. Examples:
+   - A countertop contract billed to "Sue Lee" with a "Ship to: 700 E Katella, Anaheim. Ask for Irwin." line → ONE customer (Sue Lee). The Anaheim address goes in Sue Lee's \`addresses\` array (label it as a job-site / shipping address in raw_value if useful) and "Ask for Irwin" goes in the top-level \`notes\` field.
+   - A contract billed to "Acme Corp" with "Attn: Jane Smith" → ONE customer (Acme Corp, with company_name="Acme Corp"; mention "Attn: Jane Smith" in \`notes\`).
+   - A document showing both a customer and a service provider/contractor at the top → only the BILLED party is a customer. The provider is the business doing the work — your user.
+   Only emit a SECOND customer when the document is genuinely about two distinct billed parties (rare — almost always a customer list or a multi-party email).
+
+7. **Contracts must reference exactly one customer.** Every contract you emit has a \`customer_index\` field — the integer index into the top-level \`customers\` array of the customer this contract belongs to. For most documents that's \`0\`. If you ever do emit two customers, double-check that the index correctly points to the billed party.
+
 ## Per-type guidance
 
-- **contract / invoice / work_order**: emit exactly ONE customer for most documents (the party being billed or contracted with). Populate the first entry of \`contracts[]\` with \`contract_date\`, \`amount_cents\`, \`scope_of_work\`, and any explicit \`line_items\`. Ignore boilerplate ("terms & conditions", signatures, letterhead) unless it changes the customer identity.
+- **contract / invoice / work_order**: emit exactly ONE customer (the party being billed). Set \`customer_index: 0\` on the contract. Populate \`contract_date\`, \`amount_cents\`, \`scope_of_work\`, and any explicit \`line_items\`. Ignore boilerplate ("terms & conditions", signatures, letterhead) unless it changes the customer identity.
 - **customer_list_spreadsheet**: emit ONE customer per data row. If the spreadsheet uses consistent column labels (name, phone, email, address), map them directly. If columns are ambiguous, prefer populating only what you're confident about. Do NOT populate \`contracts[]\` from a list unless a column explicitly names a contract date or amount.
 - **email_export**: the sender and each discrete recipient may be a distinct customer. Emit one customer per unique party. Use email-signature footers for phones, addresses, and titles. Do NOT populate \`contracts[]\` from email body text unless there is an explicit, unambiguous reference to a contract or invoice (date + amount + scope all present).
 - **business_card**: emit ONE customer only. No \`contracts[]\`.
@@ -45,6 +53,8 @@ Your job is to extract structured customer and contract data from ONE document a
 - Emails: lowercase in \`raw_value\` only if the document itself used lowercase; otherwise preserve casing.
 - Addresses: emit the whole line in \`raw_value\`; also emit parsed components if unambiguous. If components are ambiguous, leave them null.
 - Line items: only include if the document explicitly enumerates products/services. A contract that says "full roof replacement, $12,000" has ONE line item, not many.
+- Line-item math: when a contract enumerates line items with quantities and unit prices, emit them — but DO NOT fabricate prices to make line items sum to the contract total. Labor, fees, and materials without a unit price line are common. The top-of-contract \`amount_cents\` is the source of truth; partial line items are honest.
+- Contract → customer reference: every contract object has a \`customer_index\` integer pointing to the customer in the top-level \`customers\` array. \`0\` for single-customer documents (which is nearly all of them).
 - Spreadsheet row caps: if the spreadsheet contains more than 200 rows, emit the first 200 and mention the truncation in \`notes\`. The ingestion system re-invokes you on chunks for large files.
 
 Emit the \`emit_document\` tool exactly once. Do not send accompanying prose.`;
@@ -168,6 +178,7 @@ export const EMIT_DOCUMENT_TOOL: Anthropic.Tool = {
           type: "object",
           additionalProperties: false,
           required: [
+            "customer_index",
             "contract_date",
             "amount_cents",
             "scope_of_work",
@@ -175,6 +186,7 @@ export const EMIT_DOCUMENT_TOOL: Anthropic.Tool = {
             "confidence",
           ],
           properties: {
+            customer_index: { type: "integer", minimum: 0 },
             contract_date: { type: ["string", "null"] },
             amount_cents: { type: ["integer", "null"] },
             scope_of_work: { type: ["string", "null"] },

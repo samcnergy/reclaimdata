@@ -48,6 +48,13 @@ export const extractedLineItemSchema = z.object({
 });
 
 export const extractedContractSchema = z.object({
+  customer_index: z
+    .number()
+    .int()
+    .min(0)
+    .describe(
+      "Index into the top-level `customers` array identifying which customer this contract belongs to. Almost always 0 — most documents bill exactly one party.",
+    ),
   contract_date: z
     .string()
     .nullable()

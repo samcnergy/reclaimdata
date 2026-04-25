@@ -121,44 +121,55 @@ export async function buildClientList(args: {
       if (!extracted) continue;
       stats.runsProcessed++;
 
-      for (const customer of extracted.customers) {
+      // Resolve each customer once, keep the resulting IDs indexed in the
+      // same order the extractor emitted them — so contracts can reference
+      // the right one via `customer_index`.
+      const resolvedIds: Array<string | null> = [];
+      for (let i = 0; i < extracted.customers.length; i++) {
+        const customer = extracted.customers[i];
         const resolved = await resolveCustomer({
           sql,
           workspaceId: args.workspaceId,
           uploadId: run.upload_id,
           customer,
         });
-
         if (resolved.outcome === "created") stats.customersCreated++;
         else if (resolved.outcome === "merged") stats.customersMerged++;
         else if (resolved.outcome === "candidate-queued") stats.candidatesQueued++;
+        resolvedIds.push(resolved.customerId);
+      }
 
-        // Attach all contracts from this document to the resolved customer.
-        // Heuristic: if the document has N customers and M contracts, we
-        // attach every contract to every customer. For the 1-customer case
-        // (contracts, invoices) this is correct; for list/spreadsheet cases
-        // there are 0 contracts so the loop is a no-op.
-        if (resolved.customerId && extracted.contracts.length > 0) {
-          for (const contract of extracted.contracts) {
-            const created = await upsertContract({
-              sql,
-              workspaceId: args.workspaceId,
-              customerId: resolved.customerId,
-              uploadId: run.upload_id,
-              contract,
-            });
-            if (created) stats.contractsCreated++;
-          }
-        }
+      // Attach each contract to exactly the customer the extractor
+      // referenced. Falls back to the first resolved customer if the index
+      // is out of bounds (shouldn't happen with strict tool-use).
+      for (const contract of extracted.contracts) {
+        const idx = Math.min(
+          Math.max(0, contract.customer_index ?? 0),
+          extracted.customers.length - 1,
+        );
+        const customerId = resolvedIds[idx];
+        if (!customerId) continue;
+        const created = await upsertContract({
+          sql,
+          workspaceId: args.workspaceId,
+          customerId,
+          uploadId: run.upload_id,
+          contract,
+        });
+        if (created) stats.contractsCreated++;
+      }
 
-        if (resolved.customerId) {
-          await recomputeScores({
-            sql,
-            workspaceId: args.workspaceId,
-            customerId: resolved.customerId,
-            customerConfidence: customer.confidence,
-          });
-        }
+      // Recompute scores for every resolved customer in this document
+      // (contracts may have been added that change health + confidence).
+      for (let i = 0; i < resolvedIds.length; i++) {
+        const id = resolvedIds[i];
+        if (!id) continue;
+        await recomputeScores({
+          sql,
+          workspaceId: args.workspaceId,
+          customerId: id,
+          customerConfidence: extracted.customers[i].confidence,
+        });
       }
     }
 
