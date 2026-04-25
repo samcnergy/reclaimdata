@@ -6,6 +6,15 @@ import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
+type Stats = {
+  uploadsExtracted: number;
+  uploadsFailed: number;
+  customersCreated: number;
+  customersMerged: number;
+  candidatesQueued: number;
+  contractsCreated: number;
+};
+
 export function BuildListButton({
   workspaceId,
   disabled,
@@ -15,7 +24,6 @@ export function BuildListButton({
 }) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
-  const [queued, setQueued] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function run() {
@@ -29,24 +37,21 @@ export function BuildListButton({
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(data.error ?? "Failed to start build");
+        throw new Error(data.error ?? "Failed to build client list");
       }
-      setQueued(true);
-      router.push("/app/customers");
+      const { stats } = (await res.json()) as { stats: Stats };
+      const total = stats.customersCreated + stats.customersMerged;
+      const message =
+        total > 0
+          ? `Built — ${stats.customersCreated} new, ${stats.customersMerged} merged.`
+          : `No customers extracted yet. Try uploading a contract or invoice.`;
+      router.push(`/app/customers?built=${encodeURIComponent(message)}`);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unexpected error");
     } finally {
       setSubmitting(false);
     }
-  }
-
-  if (queued) {
-    return (
-      <Button variant="accent" size="lg" disabled>
-        Building — check back in a minute
-      </Button>
-    );
   }
 
   return (
@@ -60,7 +65,7 @@ export function BuildListButton({
         {submitting ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2} />
-            Queuing…
+            Reading your files…
           </>
         ) : disabled ? (
           "Upload a file first"
@@ -68,6 +73,11 @@ export function BuildListButton({
           "Build my client list"
         )}
       </Button>
+      {submitting && (
+        <p className="text-xs text-muted-foreground">
+          Could take a minute per file. Don't close the tab.
+        </p>
+      )}
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );

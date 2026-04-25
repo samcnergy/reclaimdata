@@ -40,6 +40,8 @@ import type {
 } from "@/lib/extraction/schemas";
 
 export type BuildListStats = {
+  uploadsExtracted: number;
+  uploadsFailed: number;
   runsProcessed: number;
   customersCreated: number;
   customersMerged: number;
@@ -54,6 +56,8 @@ export async function buildClientList(args: {
 }): Promise<BuildListStats> {
   const sql = postgres(args.dbUrl, { max: 1, prepare: false });
   const stats: BuildListStats = {
+    uploadsExtracted: 0,
+    uploadsFailed: 0,
     runsProcessed: 0,
     customersCreated: 0,
     customersMerged: 0,
@@ -63,6 +67,46 @@ export async function buildClientList(args: {
   };
 
   try {
+    // Stage 0: extract any uploads that haven't been extracted yet. We run
+    // these inline (sequentially) rather than fanning out via a job queue
+    // so the user gets a single deterministic round-trip with no external
+    // orchestration to maintain. For v1 with a handful of files at a
+    // time this is plenty.
+    const pending = await sql<Array<{ id: string }>>`
+      SELECT u.id
+      FROM uploads u
+      LEFT JOIN extraction_runs er ON er.upload_id = u.id
+      WHERE u.workspace_id = ${args.workspaceId}
+        AND u.status IN ('queued', 'processing')
+        AND er.id IS NULL
+      ORDER BY u.uploaded_at ASC
+    `;
+
+    if (pending.length > 0) {
+      const { runExtraction } = await import("@/lib/extraction/runner");
+      for (const row of pending) {
+        try {
+          await sql`UPDATE uploads SET status = 'processing' WHERE id = ${row.id}`;
+          await runExtraction({ uploadId: row.id, workspaceId: args.workspaceId });
+          await sql`
+            UPDATE uploads
+            SET status = 'completed', processed_at = now()
+            WHERE id = ${row.id}
+          `;
+          stats.uploadsExtracted++;
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          await sql`
+            UPDATE uploads
+            SET status = 'failed', error_message = ${message.slice(0, 500)},
+                processed_at = now()
+            WHERE id = ${row.id}
+          `;
+          stats.uploadsFailed++;
+        }
+      }
+    }
+
     const runs = await sql<Array<{ id: string; upload_id: string; raw_response_storage_path: string | null }>>`
       SELECT id, upload_id, raw_response_storage_path
       FROM extraction_runs

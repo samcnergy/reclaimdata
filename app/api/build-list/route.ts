@@ -2,10 +2,14 @@ import { NextResponse } from "next/server";
 
 import { requireUser } from "@/lib/auth/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { inngest } from "@/lib/inngest/client";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
+import { buildClientList } from "@/lib/pipeline/build-list";
 
-const RATE_LIMIT = { limit: 3, windowMs: 5 * 60_000 }; // 3 runs per 5 min per IP
+const RATE_LIMIT = { limit: 3, windowMs: 5 * 60_000 };
+
+// Allow long extractions to finish. Render's hard request cap is 10 min
+// for web services; we cap our own work at 9 to leave a margin.
+export const maxDuration = 540;
 
 export async function POST(request: Request) {
   const user = await requireUser();
@@ -27,7 +31,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "workspaceId required" }, { status: 400 });
   }
 
-  // Confirm the user belongs to the workspace before queuing the job.
   const admin = createSupabaseAdminClient();
   const { data: membership } = await admin
     .from("workspace_members")
@@ -39,10 +42,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Not a member of that workspace" }, { status: 403 });
   }
 
-  const ids = await inngest.send({
-    name: "pipeline.build-list",
-    data: { workspaceId: body.workspaceId },
-  });
+  const dbUrl = process.env.SUPABASE_DB_URL;
+  if (!dbUrl) {
+    return NextResponse.json(
+      { error: "SUPABASE_DB_URL is not configured" },
+      { status: 500 },
+    );
+  }
 
-  return NextResponse.json({ ok: true, eventIds: ids.ids }, { status: 202 });
+  try {
+    const stats = await buildClientList({ workspaceId: body.workspaceId, dbUrl });
+    return NextResponse.json({ ok: true, stats }, { status: 200 });
+  } catch (err) {
+    console.error("[build-list] failed:", err);
+    return NextResponse.json(
+      {
+        error: err instanceof Error ? err.message : "Build failed",
+      },
+      { status: 500 },
+    );
+  }
 }
