@@ -123,7 +123,9 @@ async function ensureVariation(
   ) as { id?: string; subscriptionPlanVariationData?: { name?: string } } | undefined;
   if (existing?.id) return existing.id;
 
-  const cadence = args.cadence === "MONTHLY" ? "EVERY_MONTH" : "ANNUAL";
+  // Square's catalog cadence enum literally accepts "MONTHLY" / "ANNUAL"
+  // (and many others). Pass through unchanged.
+  const cadence = args.cadence;
 
   const { catalogObject } = await client.catalog.object.upsert({
     idempotencyKey: randomUUID(),
