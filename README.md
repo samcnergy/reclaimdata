@@ -89,15 +89,12 @@ lib/
   auth/                  # requireUser, getAuthUser
   billing/               # Plan rules, limit enforcement
   brevo/                 # transactional email
-  crypto/encrypt.ts      # AES-256-GCM for OAuth refresh tokens
   customers/queries.ts   # list + detail queries
   db/                    # Drizzle client + schema + RLS SQL
   dedupe/matcher.ts      # E.164 / email exact + pg_trgm fuzzy
   extraction/            # Claude client, prompts, schemas, runner, converters
-  gmail/                 # Gmail v1 client + sent-folder sync
-  inngest/               # client + functions/{extraction-file-process, pipeline-build-list, extraction-email-sync}
+  inngest/               # client + functions/{extraction-file-process, pipeline-build-list}
   normalization/         # phone (libphonenumber-js), email, name, address, date
-  oauth/google.ts        # Google OAuth helpers
   pipeline/              # build-list orchestrator + Stage 4 validate
   rate-limit.ts          # in-memory fixed-window limiter
   scoring/               # health + confidence
@@ -162,17 +159,7 @@ Mark Secret rows as Secret. Render auto-redeploys on push to main.
 - [ ] **Brevo**: domain authenticated (DKIM + DMARC passing) — confirm
   for `reclaimdata.ai` periodically.
 
-### 5. Google OAuth verification
-
-The OAuth consent screen is currently in **Testing** status. Production
-Gmail users outside the test-user list cannot authorize. Before opening
-public Gmail-connect:
-
-- [ ] Switch app to Production in Google Auth Platform.
-- [ ] Submit for verification of the restricted `gmail.readonly` scope
-  (Google's review can take weeks — start early).
-
-### 6. Secret rotations
+### 5. Secret rotations
 
 These are recommended because the secrets passed through earlier
 session transcripts:
@@ -180,19 +167,17 @@ session transcripts:
 - [ ] DB passwords (dev + prod) — rotate via Supabase → Settings →
   Database → Reset password.
 - [ ] Supabase prod secret key — rotate via Settings → API Keys.
-- [ ] Google OAuth client secret — rotate via Google Auth Platform →
-  Clients.
 - [ ] Brevo API key — rotate via SMTP & API → API keys.
 - [ ] USPS client secret — rotate via USPS dev portal.
 - [ ] After each rotation, update both `~/reclaimdata-secrets/.env.local`
   and the matching env var in Render.
 
-### 7. Legal copy
+### 6. Legal copy
 
 - [ ] `/privacy`, `/terms`, `/dpa` ship with attorney-review banners. Get
   reviewed text in place before public launch.
 
-### 8. Optional polish
+### 7. Optional polish
 
 - [ ] Plausible — sign up and add `<script defer …>` to the marketing
   layout if you want it alongside PostHog.

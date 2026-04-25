@@ -37,7 +37,7 @@ export default function DashboardPage() {
         <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="max-w-lg text-sm text-muted-foreground">
             Drag in contracts, invoices, scanned PDFs, Word docs, spreadsheets,
-            or images. Connect Gmail if you'd like us to read your sent folder.
+            or phone photographs. We turn them into structured customer records.
           </p>
           <Button asChild size="lg" variant="accent">
             <Link href="/app/upload">Upload files</Link>

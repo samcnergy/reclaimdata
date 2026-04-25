@@ -14,7 +14,6 @@ const plans = [
       "Up to 2,500 customers",
       "Unlimited uploads",
       "CSV export",
-      "1 email connection",
       "1 user",
     ],
   },
@@ -26,7 +25,7 @@ const plans = [
     featured: true,
     features: [
       "Up to 15,000 customers",
-      "3 email connections",
+      "Unlimited uploads",
       "5 users",
       "Priority processing",
     ],
@@ -38,7 +37,7 @@ const plans = [
     tagline: "For long-running businesses with deep archives.",
     features: [
       "Up to 50,000 customers",
-      "Unlimited email connections & users",
+      "Unlimited users",
       "Handwritten note support",
     ],
   },

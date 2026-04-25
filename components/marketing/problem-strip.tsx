@@ -1,4 +1,4 @@
-import { FileText, Inbox, Table2 } from "lucide-react";
+import { FileText, Camera, Table2 } from "lucide-react";
 
 const problems = [
   {
@@ -6,8 +6,8 @@ const problems = [
     text: "Paper contracts in filing cabinets.",
   },
   {
-    icon: Inbox,
-    text: "Customer names scattered across 10,000 emails.",
+    icon: Camera,
+    text: "Boxes of scanned PDFs and phone photos.",
   },
   {
     icon: Table2,

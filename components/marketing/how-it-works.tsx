@@ -7,7 +7,7 @@ const steps = [
   {
     n: "02",
     title: "Upload your files",
-    body: "Drag in contracts, invoices, scanned PDFs, Word docs, and spreadsheets. Connect your inbox if you like.",
+    body: "Drag in contracts, invoices, scanned PDFs, Word docs, spreadsheets, and phone photos.",
   },
   {
     n: "03",

@@ -80,10 +80,7 @@ layers — a request that bypasses any one of them must still fail:
 - TLS + HSTS on Render (default).
 - Strict Content-Security-Policy.
 - Never log PII. Scrubbing rules configured in Sentry init.
-- Rate limiting on `/api/waitlist` and `/api/build-list`.
-- OAuth refresh tokens encrypted with `OAUTH_TOKEN_ENCRYPTION_KEY` before
-  storage. Rotating the key requires decrypt+re-encrypt of all tokens or
-  user re-consent.
+- Rate limiting on `/api/waitlist`, `/api/build-list`, `/api/audit/run`.
 
 ## Build milestones
 

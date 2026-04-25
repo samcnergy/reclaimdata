@@ -6,24 +6,21 @@ export type LimitCheck =
   | { ok: true; remaining: number; soft: true } // approaching cap
   | { ok: false; remaining: 0; soft: false; message: string };
 
-/** customers, uploads, emailConnections, users — current counts per workspace. */
+/** customers, uploads, users — current counts per workspace. */
 export async function getWorkspaceUsage(workspaceId: string): Promise<{
   customers: number;
   uploads: number;
-  emailConnections: number;
   users: number;
 }> {
   const admin = createSupabaseAdminClient();
-  const [c, u, ec, mem] = await Promise.all([
+  const [c, u, mem] = await Promise.all([
     admin.from("customers").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId),
     admin.from("uploads").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId),
-    admin.from("email_connections").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId),
     admin.from("workspace_members").select("user_id", { count: "exact", head: true }).eq("workspace_id", workspaceId),
   ]);
   return {
     customers: c.count ?? 0,
     uploads: u.count ?? 0,
-    emailConnections: ec.count ?? 0,
     users: mem.count ?? 0,
   };
 }
@@ -39,7 +36,6 @@ export async function checkLimit(args: {
   const limit = PLANS[plan][resource];
 
   if (limit === 0) {
-    // unlimited on this plan
     return { ok: true, remaining: null, soft: false };
   }
 

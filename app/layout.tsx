@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     template: "%s · Reclaim Data",
   },
   description:
-    "Turn decades of paper contracts, Word docs, scanned PDFs, spreadsheets, and emails into a clean, validated customer database you can actually market to.",
+    "Turn decades of paper contracts, scanned PDFs, Word docs, spreadsheets, and phone photos into a clean, validated customer database you can actually market to.",
   metadataBase: new URL(
     // `||` not `??` so an empty-string env var also falls back. Render's UI
     // can quietly set "" when the value is cleared — `new URL("")` throws.

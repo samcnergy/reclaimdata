@@ -40,8 +40,6 @@ Use the `_DEV` values from `~/reclaimdata-secrets/.env.local` for Supabase; use 
 | `GOOGLE_DOCUMENT_AI_LOCATION` | `GOOGLE_DOCUMENT_AI_LOCATION` (`us`) | Plain |
 | `GOOGLE_DOCUMENT_AI_PROCESSOR_ID` | `GOOGLE_DOCUMENT_AI_PROCESSOR_ID` | Plain |
 | `GOOGLE_APPLICATION_CREDENTIALS_JSON` | `GOOGLE_APPLICATION_CREDENTIALS_JSON` (full JSON string) | **Secret** |
-| `GOOGLE_OAUTH_CLIENT_ID` | `GOOGLE_OAUTH_CLIENT_ID` | Plain |
-| `GOOGLE_OAUTH_CLIENT_SECRET` | `GOOGLE_OAUTH_CLIENT_SECRET` | **Secret** |
 | `ZEROBOUNCE_API_KEY` | `ZEROBOUNCE_API_KEY` | **Secret** |
 | `TWILIO_ACCOUNT_SID` | `TWILIO_ACCOUNT_SID` | Plain |
 | `TWILIO_AUTH_TOKEN` | `TWILIO_AUTH_TOKEN` | **Secret** |
@@ -68,7 +66,6 @@ Use the `_DEV` values from `~/reclaimdata-secrets/.env.local` for Supabase; use 
 | `SENTRY_DSN` | `SENTRY_DSN` | Plain |
 | `NEXT_PUBLIC_POSTHOG_KEY` | `NEXT_PUBLIC_POSTHOG_KEY` | Plain |
 | `NEXT_PUBLIC_POSTHOG_HOST` | `NEXT_PUBLIC_POSTHOG_HOST` (`https://us.i.posthog.com`) | Plain |
-| `OAUTH_TOKEN_ENCRYPTION_KEY` | `OAUTH_TOKEN_ENCRYPTION_KEY` | **Secret** |
 
 ---
 
@@ -100,11 +97,10 @@ Before **any** deploy (dev or prod):
 
 Before **production** deploy:
 
-- [ ] Google OAuth app must be switched from "Testing" → "Production" and verified for `gmail.readonly` (Google review can take weeks — start early)
 - [ ] Square production app + location + webhook + plan IDs must be created
 - [ ] Twilio upgraded from trial to pay-as-you-go
 - [ ] ZeroBounce credits purchased (100/month free tier insufficient for production)
-- [ ] Rotate secrets flagged in SETUP_LOG.md "Post-launch follow-ups" (DB passwords, prod Supabase secret key, Google OAuth secret, Brevo API key, USPS client secret)
+- [ ] Rotate secrets flagged in SETUP_LOG.md "Post-launch follow-ups" (DB passwords, prod Supabase secret key, Brevo API key, USPS client secret)
 
 ---
 
@@ -112,4 +108,3 @@ Before **production** deploy:
 
 - `GOOGLE_APPLICATION_CREDENTIALS_JSON` is a multi-line JSON string. In Render, paste the entire JSON blob (including the private key with literal `\n` sequences) as a single-line secret. Render stores it verbatim.
 - Inngest keys are tied to the **Production** environment in the Inngest workspace — they work for both dev and prod deploys (Inngest routes by app URL, not by key suffix).
-- `OAUTH_TOKEN_ENCRYPTION_KEY` must remain **identical** across all instances of the same logical environment. Changing it mid-flight breaks all stored user tokens.

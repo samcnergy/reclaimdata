@@ -84,7 +84,6 @@ export default async function SettingsPage() {
           <dl className="grid gap-3 text-sm sm:grid-cols-2">
             <UsageRow label="Customers" current={usage.customers} limit={planRules.customers} />
             <UsageRow label="Uploads" current={usage.uploads} limit={planRules.uploads} />
-            <UsageRow label="Email connections" current={usage.emailConnections} limit={planRules.emailConnections} />
             <UsageRow label="Members" current={usage.users} limit={planRules.users} />
           </dl>
         </CardContent>

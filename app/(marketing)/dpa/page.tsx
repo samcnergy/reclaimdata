@@ -23,11 +23,11 @@ export default function DpaPage() {
 
         <h2 className="font-serif text-2xl text-foreground">Processing scope</h2>
         <p>
-          Reclaim Data processes the data you upload (contracts, emails,
-          spreadsheets, scanned documents, and the structured records we
-          extract from them) solely to provide the service described in
-          the Terms: extraction, normalization, deduplication, validation,
-          audit, and presentation back to you.
+          Reclaim Data processes the data you upload (contracts,
+          spreadsheets, scanned documents, photographs, and the structured
+          records we extract from them) solely to provide the service
+          described in the Terms: extraction, normalization, deduplication,
+          validation, audit, and presentation back to you.
         </p>
 
         <h2 className="font-serif text-2xl text-foreground">Security measures</h2>

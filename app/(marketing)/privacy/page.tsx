@@ -43,11 +43,11 @@ export default function PrivacyPage() {
         <h2 className="font-serif text-2xl text-foreground">Sub-processors</h2>
         <p>
           We use Supabase (database and storage), Render (hosting),
-          Anthropic (extraction), Google Cloud (OCR, Gmail OAuth), Twilio
-          (phone validation), ZeroBounce (email validation), USPS (address
-          validation), Brevo (transactional email), Square (payments),
-          Inngest (background jobs), PostHog (analytics), and Sentry
-          (error tracking).
+          Anthropic (extraction), Google Cloud (OCR fallback for low-quality
+          scans), Twilio (phone validation), ZeroBounce (email validation),
+          USPS (address validation), Brevo (transactional email), Square
+          (payments), Inngest (background jobs), PostHog (analytics), and
+          Sentry (error tracking).
         </p>
 
         <h2 className="font-serif text-2xl text-foreground">Your rights</h2>

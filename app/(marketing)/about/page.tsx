@@ -30,11 +30,11 @@ export default function AboutPage() {
         <p>
           Reclaim Data is the bridge. It reads the documents you already
           have — paper contracts, scanned PDFs, Word docs, Excel sheets,
-          emails — and returns a clean, validated, deduplicated customer
-          database. Every field links back to the document it came from, so
-          you can always verify. Every piece of data carries a confidence
-          score, so the software never pretends to know something it
-          doesn't.
+          phone photos of business cards — and returns a clean, validated,
+          deduplicated customer database. Every field links back to the
+          document it came from, so you can always verify. Every piece of
+          data carries a confidence score, so the software never pretends
+          to know something it doesn't.
         </p>
         <p>
           We're a small team at{" "}

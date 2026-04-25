@@ -13,7 +13,6 @@ export type Cadence = "monthly" | "annual";
 type PlanRules = {
   customers: number;
   uploads: number; // 0 = unlimited
-  emailConnections: number; // 0 = unlimited
   users: number; // 0 = unlimited
   csvExport: boolean;
   priorityProcessing: boolean;
@@ -24,7 +23,6 @@ export const PLANS: Record<Plan, PlanRules> = {
   free: {
     customers: 100,
     uploads: 50,
-    emailConnections: 0,
     users: 1,
     csvExport: false,
     priorityProcessing: false,
@@ -33,7 +31,6 @@ export const PLANS: Record<Plan, PlanRules> = {
   starter: {
     customers: 2_500,
     uploads: 0,
-    emailConnections: 1,
     users: 1,
     csvExport: true,
     priorityProcessing: false,
@@ -42,7 +39,6 @@ export const PLANS: Record<Plan, PlanRules> = {
   professional: {
     customers: 15_000,
     uploads: 0,
-    emailConnections: 3,
     users: 5,
     csvExport: true,
     priorityProcessing: true,
@@ -51,7 +47,6 @@ export const PLANS: Record<Plan, PlanRules> = {
   legacy: {
     customers: 50_000,
     uploads: 0,
-    emailConnections: 0,
     users: 0,
     csvExport: true,
     priorityProcessing: true,

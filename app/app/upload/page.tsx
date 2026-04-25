@@ -2,7 +2,6 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 import { BuildListButton } from "@/components/app/build-list-button";
-import { EmailConnectionCard } from "@/components/app/email-connection-card";
 import { UploadDropzone } from "@/components/app/upload-dropzone";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getActiveWorkspaceContext } from "@/lib/workspaces/active";
@@ -29,64 +28,33 @@ export default async function UploadPage() {
   const ctx = await getActiveWorkspaceContext();
 
   const supabase = await createSupabaseServerClient();
-  const [{ data: uploads }, { data: emailConnection }] = await Promise.all([
-    supabase
-      .from("uploads")
-      .select("id, filename, mime_type, size_bytes, status, uploaded_at")
-      .order("uploaded_at", { ascending: false })
-      .limit(20),
-    supabase
-      .from("email_connections")
-      .select("id, email_address, last_sync_at")
-      .eq("workspace_id", ctx.workspace.id)
-      .eq("provider", "gmail")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-  ]);
+  const { data: uploads } = await supabase
+    .from("uploads")
+    .select("id, filename, mime_type, size_bytes, status, uploaded_at")
+    .order("uploaded_at", { ascending: false })
+    .limit(20);
 
   const canBuild = (uploads?.length ?? 0) > 0;
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-8 py-10">
+    <div className="mx-auto w-full max-w-4xl px-8 py-10">
       <header className="mb-8">
         <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
           Upload
         </p>
         <h1 className="mt-2 font-serif text-4xl font-medium text-foreground">
-          Bring in your customer records.
+          Turn your paper into a customer database.
         </h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">
-          Drag in files, or connect an inbox. Everything here stays inside
-          your workspace — we process it on your behalf and never share it.
+          Drop in contracts, invoices, scanned PDFs, Word docs, spreadsheets,
+          and photographs. Everything stays inside your workspace — we process
+          it on your behalf and never share it.
         </p>
       </header>
 
-      <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr]">
-        <section>
-          <h2 className="font-serif text-2xl text-foreground">Files</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Contracts, invoices, scanned PDFs, Word docs, spreadsheets, images.
-          </p>
-          <div className="mt-6">
-            <UploadDropzone workspaceId={ctx.workspace.id} />
-          </div>
-        </section>
-
-        <section>
-          <h2 className="font-serif text-2xl text-foreground">Email</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Connect Gmail and we'll pull customer contacts from your sent
-            folder.
-          </p>
-          <div className="mt-6">
-            <EmailConnectionCard
-              workspaceId={ctx.workspace.id}
-              connection={emailConnection ?? null}
-            />
-          </div>
-        </section>
-      </div>
+      <section>
+        <UploadDropzone workspaceId={ctx.workspace.id} />
+      </section>
 
       <section className="mt-12">
         <div className="flex items-end justify-between">

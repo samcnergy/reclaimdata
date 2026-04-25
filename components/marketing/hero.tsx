@@ -15,9 +15,9 @@ export function Hero() {
           reclaimed.
         </h1>
         <p className="mx-auto mt-8 max-w-2xl text-balance text-lg leading-relaxed text-muted-foreground">
-          Reclaim Data turns decades of paper contracts, Word docs, and emails
-          into a clean, searchable customer database you can actually market
-          to.
+          Upload paper contracts, scanned PDFs, Word docs, spreadsheets, and
+          photographs. Reclaim Data turns them into a clean, searchable
+          customer database you can actually market to.
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button asChild size="lg" variant="accent">

@@ -8,7 +8,7 @@ import { ParentStrip } from "@/components/marketing/parent-strip";
 export const metadata: Metadata = {
   title: "How it works",
   description:
-    "How Reclaim Data turns paper contracts, scanned PDFs, Word docs, spreadsheets, and emails into a clean, validated customer database.",
+    "How Reclaim Data turns paper contracts, scanned PDFs, Word docs, spreadsheets, and phone photos into a clean, validated customer database.",
 };
 
 const steps = [
@@ -22,9 +22,9 @@ const steps = [
   {
     n: "02",
     title: "Upload your files",
-    body: "Drag in contracts, invoices, scanned PDFs, Word docs, spreadsheets, and images. Up to 100 MB per file.",
+    body: "Drag in contracts, invoices, scanned PDFs, Word docs, spreadsheets, and phone photos. Up to 100 MB per file.",
     detail:
-      "Optionally connect Gmail — we'll pull contact details out of your sent folder and inbox. We never send email on your behalf and we never read message bodies beyond what's needed for extraction.",
+      "We turn physical records into structured customer data. Files are processed in your private workspace — never shared, never used to train AI models.",
   },
   {
     n: "03",
