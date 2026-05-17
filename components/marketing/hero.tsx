@@ -21,7 +21,7 @@ export function Hero() {
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button asChild size="lg" variant="accent">
-            <Link href="#waitlist">Join the waitlist</Link>
+            <Link href="/signup">Sign up</Link>
           </Button>
           <Button asChild size="lg" variant="outline">
             <Link href="#how-it-works">See how it works</Link>

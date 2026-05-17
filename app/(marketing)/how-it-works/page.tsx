@@ -15,7 +15,7 @@ const steps = [
   {
     n: "01",
     title: "Log in",
-    body: "Email + password or a magic link. No credit card on the free tier.",
+    body: "Email + password or a magic link.",
     detail:
       "Your workspace is yours. Invite teammates later with owner, admin, or member roles.",
   },
@@ -86,11 +86,11 @@ export default function HowItWorksPage() {
             Ready to reclaim yours?
           </h3>
           <p className="max-w-lg text-muted-foreground">
-            We onboard businesses in small cohorts. Leave your email and we'll
-            reach out when your slot opens.
+            $249 per month. Up to 2,500 customers, everything included.
+            Cancel any time.
           </p>
           <Button asChild size="lg" variant="accent">
-            <Link href="/#waitlist">Join the waitlist</Link>
+            <Link href="/signup">Sign up</Link>
           </Button>
         </div>
       </section>

@@ -4,7 +4,6 @@ import { ParentStrip } from "@/components/marketing/parent-strip";
 import { PricingCards } from "@/components/marketing/pricing-cards";
 import { ProblemStrip } from "@/components/marketing/problem-strip";
 import { TrustStrip } from "@/components/marketing/trust-strip";
-import { WaitlistCta } from "@/components/marketing/waitlist-cta";
 import { WhatWeExtract } from "@/components/marketing/what-we-extract";
 
 export default function LandingPage() {
@@ -16,7 +15,6 @@ export default function LandingPage() {
       <WhatWeExtract />
       <PricingCards />
       <TrustStrip />
-      <WaitlistCta />
       <ParentStrip />
     </>
   );

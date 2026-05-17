@@ -2,7 +2,7 @@ const steps = [
   {
     n: "01",
     title: "Log in",
-    body: "Sign up with your email. No credit card for the free tier.",
+    body: "Sign up with your email and start your workspace.",
   },
   {
     n: "02",

@@ -17,7 +17,7 @@ export default function SignupPage() {
           Start reclaiming your data.
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Free tier, no credit card. Up to 100 customers.
+          $249 per month. Cancel any time.
         </p>
       </div>
       <Suspense fallback={null}>

@@ -35,7 +35,7 @@ export function Header() {
             Log in
           </Link>
           <Button asChild size="sm" variant="accent">
-            <Link href="#waitlist">Join the waitlist</Link>
+            <Link href="/signup">Sign up</Link>
           </Button>
         </div>
       </div>

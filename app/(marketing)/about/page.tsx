@@ -81,7 +81,7 @@ export default function AboutPage() {
             — we read every message.
           </p>
           <Button asChild size="lg" variant="accent">
-            <Link href="/#waitlist">Join the waitlist</Link>
+            <Link href="/signup">Sign up</Link>
           </Button>
         </div>
       </section>

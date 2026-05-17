@@ -70,9 +70,13 @@ export function lookupPlanByVariationId(
   return map[variationId] ?? null;
 }
 
+// Marketing-visible plan: only `professional` is sold. `free` / `starter` /
+// `legacy` remain in the type for DB-enum compatibility with existing rows,
+// but they should never be assigned to new workspaces. A workspace stuck on
+// `free` is treated as "not yet subscribed" — see /app/settings/billing.
 export const PLAN_DISPLAY: Record<Plan, { name: string; tagline: string }> = {
-  free: { name: "Free", tagline: "Try it with up to 100 customers." },
-  starter: { name: "Starter", tagline: "$99 / month — for a single owner." },
-  professional: { name: "Professional", tagline: "$249 / month — for small teams." },
-  legacy: { name: "Legacy", tagline: "$499 / month — for deep archives." },
+  free: { name: "No plan", tagline: "Subscribe to activate your workspace." },
+  starter: { name: "Reclaim Data", tagline: "$249 / month" },
+  professional: { name: "Reclaim Data", tagline: "$249 / month" },
+  legacy: { name: "Reclaim Data", tagline: "$249 / month" },
 };
