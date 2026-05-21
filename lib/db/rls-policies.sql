@@ -59,6 +59,20 @@ ALTER TABLE public.audits               ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.waitlist             ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.email_connections    ENABLE ROW LEVEL SECURITY;
 
+-- Migration-tracking journal. Written only by scripts/apply-migrations.ts
+-- via the service-role connection; no app code touches it. Enable RLS
+-- with no policies — anon/authenticated get zero access.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public' AND c.relname = '__migrations'
+  ) THEN
+    EXECUTE 'ALTER TABLE public.__migrations ENABLE ROW LEVEL SECURITY';
+  END IF;
+END $$;
+
 -- ---- users --------------------------------------------------------------
 
 DROP POLICY IF EXISTS users_self_select ON public.users;
