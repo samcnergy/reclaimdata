@@ -5,8 +5,9 @@ import { requireUser } from "@/lib/auth/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { normalizeEmail } from "@/lib/normalization/email";
 
+// workspaceId is NOT accepted from the client — it's derived from the
+// customer record on the server side to prevent cross-workspace injection.
 const schema = z.object({
-  workspaceId: z.string().uuid(),
   rawValue: z.string().min(1).max(254),
 });
 
@@ -24,12 +25,24 @@ export async function POST(
     );
   }
   const supabase = await createSupabaseServerClient();
+
+  // Resolve workspace_id server-side (RLS ensures the caller can only read
+  // customers in their own workspace, so this doubles as an authz check).
+  const { data: customer, error: custErr } = await supabase
+    .from("customers")
+    .select("workspace_id")
+    .eq("id", customerId)
+    .single();
+  if (custErr || !customer) {
+    return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+  }
+
   const norm = normalizeEmail(parsed.data.rawValue);
   const { data, error } = await supabase
     .from("emails")
     .insert({
       customer_id: customerId,
-      workspace_id: parsed.data.workspaceId,
+      workspace_id: customer.workspace_id,
       raw_value: parsed.data.rawValue,
       normalized_value: norm.normalized,
       confidence: 100,

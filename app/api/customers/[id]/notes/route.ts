@@ -4,9 +4,10 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+// workspaceId is NOT accepted from the client — it's derived from the
+// customer record on the server side to prevent cross-workspace injection.
 const noteSchema = z.object({
   body: z.string().min(1).max(10_000),
-  workspaceId: z.string().uuid(),
 });
 
 export async function POST(
@@ -14,7 +15,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const user = await requireUser();
-  const { id } = await params;
+  const { id: customerId } = await params;
 
   const body = await request.json().catch(() => null);
   const parsed = noteSchema.safeParse(body);
@@ -26,11 +27,23 @@ export async function POST(
   }
 
   const supabase = await createSupabaseServerClient();
+
+  // Resolve workspace_id server-side (RLS ensures the caller can only read
+  // customers in their own workspace, so this doubles as an authz check).
+  const { data: customer, error: custErr } = await supabase
+    .from("customers")
+    .select("workspace_id")
+    .eq("id", customerId)
+    .single();
+  if (custErr || !customer) {
+    return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+  }
+
   const { data, error } = await supabase
     .from("notes")
     .insert({
-      customer_id: id,
-      workspace_id: parsed.data.workspaceId,
+      customer_id: customerId,
+      workspace_id: customer.workspace_id,
       author_id: user.id,
       body: parsed.data.body,
     })

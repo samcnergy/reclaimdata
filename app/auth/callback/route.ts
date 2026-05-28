@@ -22,5 +22,9 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(new URL(next, request.url));
+  // Guard against open-redirect: `next` must be a relative path, not a
+  // protocol-relative URL (//evil.com) or an absolute URL (https://evil.com).
+  const safePath =
+    next.startsWith("/") && !next.startsWith("//") ? next : "/app";
+  return NextResponse.redirect(new URL(safePath, request.url));
 }
