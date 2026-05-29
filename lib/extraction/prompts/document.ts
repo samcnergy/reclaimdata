@@ -36,7 +36,7 @@ Your job is to extract structured customer and contract data from ONE document a
 
 ## Per-type guidance
 
-- **contract / invoice / work_order**: emit exactly ONE customer (the party being billed). Set \`customer_index: 0\` on the contract. Populate \`contract_date\`, \`amount_cents\`, \`scope_of_work\`, and any explicit \`line_items\`. Ignore boilerplate ("terms & conditions", signatures, letterhead) unless it changes the customer identity.
+- **contract / invoice / work_order**: emit exactly ONE customer (the party being billed). Set \`customer_index: 0\` on the contract. Populate \`invoice_number\`, \`contract_date\`, \`amount_cents\`, \`scope_of_work\`, and any explicit \`line_items\`. For \`invoice_number\` use whatever identifier the document carries — "Invoice #", "INV-…", "Contract No.", "Job #", "Work Order #", "Quote #" — copy it verbatim including any prefix or punctuation. If no such identifier is visible, emit null. Ignore boilerplate ("terms & conditions", signatures, letterhead) unless it changes the customer identity.
 - **customer_list_spreadsheet**: emit ONE customer per data row. If the spreadsheet uses consistent column labels (name, phone, email, address), map them directly. If columns are ambiguous, prefer populating only what you're confident about. Do NOT populate \`contracts[]\` from a list unless a column explicitly names a contract date or amount.
 - **email_export**: the sender and each discrete recipient may be a distinct customer. Emit one customer per unique party. Use email-signature footers for phones, addresses, and titles. Do NOT populate \`contracts[]\` from email body text unless there is an explicit, unambiguous reference to a contract or invoice (date + amount + scope all present).
 - **business_card**: emit ONE customer only. No \`contracts[]\`.
@@ -184,6 +184,7 @@ export const EMIT_DOCUMENT_TOOL: Anthropic.Tool = {
           additionalProperties: false,
           required: [
             "customer_index",
+            "invoice_number",
             "contract_date",
             "amount_cents",
             "scope_of_work",
@@ -192,6 +193,7 @@ export const EMIT_DOCUMENT_TOOL: Anthropic.Tool = {
           ],
           properties: {
             customer_index: { type: "integer", minimum: 0 },
+            invoice_number: { type: ["string", "null"] },
             contract_date: { type: ["string", "null"] },
             amount_cents: { type: ["integer", "null"] },
             scope_of_work: { type: ["string", "null"] },

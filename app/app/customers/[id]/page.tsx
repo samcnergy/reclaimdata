@@ -250,6 +250,11 @@ export default async function CustomerDetailPage({
                           <span className="ml-3 text-muted-foreground">
                             {formatCents(c.amount_cents)}
                           </span>
+                          {c.invoice_number && (
+                            <span className="ml-3 rounded bg-secondary/60 px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
+                              #{c.invoice_number}
+                            </span>
+                          )}
                         </p>
                         {c.scope_of_work && (
                           <p className="mt-1 text-sm text-foreground">{c.scope_of_work}</p>
@@ -261,6 +266,7 @@ export default async function CustomerDetailPage({
                         <ContractRowActions
                           contractId={c.id}
                           initial={{
+                            invoiceNumber: c.invoice_number,
                             contractDate: c.contract_date,
                             amountCents: c.amount_cents,
                             scopeOfWork: c.scope_of_work,

@@ -209,6 +209,7 @@ export type CustomerDetail = {
   }>;
   contracts: Array<{
     id: string;
+    invoice_number: string | null;
     contract_date: string | null;
     amount_cents: number | null;
     scope_of_work: string | null;
@@ -280,7 +281,7 @@ export async function getCustomerDetail(
     supabase
       .from("contracts")
       .select(
-        "id, contract_date, amount_cents, scope_of_work, confidence, source_refs, line_items(id, product_type, size, color, quantity, unit_price_cents)",
+        "id, invoice_number, contract_date, amount_cents, scope_of_work, confidence, source_refs, line_items(id, product_type, size, color, quantity, unit_price_cents)",
       )
       .eq("customer_id", customerId)
       .order("contract_date", { ascending: false, nullsFirst: false }),

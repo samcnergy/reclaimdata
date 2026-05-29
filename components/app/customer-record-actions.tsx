@@ -529,6 +529,7 @@ function AddressFieldset({
 /* ---------- contracts ------------------------------------------------- */
 
 type ContractFields = {
+  invoiceNumber: string;
   contractDate: string;
   amountDollars: string;
   scopeOfWork: string;
@@ -549,12 +550,18 @@ export function ContractRowActions({
   initial,
 }: {
   contractId: string;
-  initial: { contractDate: string | null; amountCents: number | null; scopeOfWork: string | null };
+  initial: {
+    invoiceNumber: string | null;
+    contractDate: string | null;
+    amountCents: number | null;
+    scopeOfWork: string | null;
+  };
 }) {
   const refresh = useRefresh();
   const [editOpen, setEditOpen] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
   const [fields, setFields] = useState<ContractFields>({
+    invoiceNumber: initial.invoiceNumber ?? "",
     contractDate: initial.contractDate ?? "",
     amountDollars: dollarsFromCents(initial.amountCents),
     scopeOfWork: initial.scopeOfWork ?? "",
@@ -574,6 +581,7 @@ export function ContractRowActions({
         setOpen={setEditOpen}
         onSubmit={async () => {
           await patch(`/api/contracts/${contractId}`, {
+            invoiceNumber: fields.invoiceNumber.trim() || null,
             contractDate: fields.contractDate.trim() || null,
             amountCents: fields.amountDollars.trim()
               ? centsFromDollars(fields.amountDollars)
@@ -583,6 +591,16 @@ export function ContractRowActions({
           refresh();
         }}
       >
+        <div className="space-y-2">
+          <Label htmlFor="ct-invoice">Invoice / job number</Label>
+          <Input
+            id="ct-invoice"
+            type="text"
+            value={fields.invoiceNumber}
+            onChange={(e) => setFields({ ...fields, invoiceNumber: e.target.value })}
+            placeholder="INV-00421"
+          />
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
             <Label htmlFor="ct-date">Date</Label>

@@ -308,6 +308,7 @@ export const contracts = pgTable("contracts", {
   workspaceId: uuid("workspace_id")
     .notNull()
     .references(() => workspaces.id, { onDelete: "cascade" }),
+  invoiceNumber: text("invoice_number"),
   contractDate: date("contract_date"),
   amountCents: integer("amount_cents"),
   scopeOfWork: text("scope_of_work"),

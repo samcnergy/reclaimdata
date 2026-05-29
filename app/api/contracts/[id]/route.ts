@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const patchSchema = z.object({
+  invoiceNumber: z.string().max(120).nullable().optional(),
   contractDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "ISO date YYYY-MM-DD")
@@ -28,6 +29,7 @@ export async function PATCH(
     );
   }
   const update: Record<string, unknown> = {};
+  if (parsed.data.invoiceNumber !== undefined) update.invoice_number = parsed.data.invoiceNumber;
   if (parsed.data.contractDate !== undefined) update.contract_date = parsed.data.contractDate;
   if (parsed.data.amountCents !== undefined) update.amount_cents = parsed.data.amountCents;
   if (parsed.data.scopeOfWork !== undefined) update.scope_of_work = parsed.data.scopeOfWork;

@@ -55,6 +55,12 @@ export const extractedContractSchema = z.object({
     .describe(
       "Index into the top-level `customers` array identifying which customer this contract belongs to. Almost always 0 — most documents bill exactly one party.",
     ),
+  invoice_number: z
+    .string()
+    .nullable()
+    .describe(
+      "Invoice / contract / work-order / job number exactly as it appears on the document (e.g. 'INV-00421', '2024-1138', 'Job #B-7'). Null when no such identifier is present.",
+    ),
   contract_date: z
     .string()
     .nullable()

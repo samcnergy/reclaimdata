@@ -414,10 +414,12 @@ async function upsertContract(args: {
 
   const inserted = await sql<Array<{ id: string }>>`
     INSERT INTO contracts (
-      customer_id, workspace_id, contract_date, amount_cents, scope_of_work, confidence, source_refs
+      customer_id, workspace_id, invoice_number, contract_date, amount_cents,
+      scope_of_work, confidence, source_refs
     )
     VALUES (
-      ${customerId}, ${workspaceId}, ${contractDate}, ${contract.amount_cents},
+      ${customerId}, ${workspaceId}, ${contract.invoice_number ?? null},
+      ${contractDate}, ${contract.amount_cents},
       ${contract.scope_of_work}, ${contract.confidence},
       ${sql.json([{ uploadId, kind: "extracted" }])}
     )

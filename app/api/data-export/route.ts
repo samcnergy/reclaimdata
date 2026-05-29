@@ -94,7 +94,7 @@ export async function GET(request: Request) {
       query: () =>
         admin
           .from("contracts")
-          .select("id, customer_id, contract_date, amount_cents, scope_of_work, confidence")
+          .select("id, customer_id, invoice_number, contract_date, amount_cents, scope_of_work, confidence")
           .eq("workspace_id", workspaceId),
     },
     {
