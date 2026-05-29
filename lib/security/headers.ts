@@ -27,6 +27,10 @@ export function buildCspHeader(): string {
       "'self'",
       "'unsafe-inline'", // Next inline boot script
       ...(isDev ? ["'unsafe-eval'"] : []),
+      // Square Web Payments SDK (new CDN — replaces js.squareup.com)
+      "https://web.squarecdn.com",
+      "https://sandbox.web.squarecdn.com",
+      // Legacy Square JS (kept for safety)
       "https://js.squareup.com",
       "https://js.squareupsandbox.com",
       posthogHost,
@@ -45,11 +49,21 @@ export function buildCspHeader(): string {
       "https://api.brevo.com",
       "https://connect.squareup.com",
       "https://connect.squareupsandbox.com",
+      // Square Web Payments SDK tokenization endpoint
+      "https://pci-connect.squareup.com",
+      "https://pci-connect.squareupsandbox.com",
       posthogHost,
       "https://*.ingest.sentry.io",
       "https://*.ingest.us.sentry.io",
     ],
-    "frame-src": ["'self'", "https://js.squareup.com", "https://js.squareupsandbox.com"],
+    "frame-src": [
+      "'self'",
+      // Square Web Payments SDK embeds the card form in iframes from these origins
+      "https://web.squarecdn.com",
+      "https://sandbox.web.squarecdn.com",
+      "https://js.squareup.com",
+      "https://js.squareupsandbox.com",
+    ],
     "frame-ancestors": ["'none'"],
     "object-src": ["'none'"],
     "base-uri": ["'self'"],
