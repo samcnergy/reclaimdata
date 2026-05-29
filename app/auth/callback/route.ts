@@ -26,5 +26,17 @@ export async function GET(request: Request) {
   // protocol-relative URL (//evil.com) or an absolute URL (https://evil.com).
   const safePath =
     next.startsWith("/") && !next.startsWith("//") ? next : "/app";
-  return NextResponse.redirect(new URL(safePath, request.url));
+
+  // Use the canonical public origin from env rather than request.url.
+  // Behind Render's load balancer, request.url carries the internal address
+  // (http://reclaimdata:10000/...) which would produce a redirect to that
+  // internal host instead of the real public domain.
+  const appOrigin =
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
+    (() => {
+      const u = new URL(request.url);
+      return `${u.protocol}//${u.host}`;
+    })();
+
+  return NextResponse.redirect(`${appOrigin}${safePath}`);
 }
