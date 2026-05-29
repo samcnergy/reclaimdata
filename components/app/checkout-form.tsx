@@ -72,19 +72,40 @@ export function CheckoutForm({
     }
 
     async function init() {
-      // Wait until the script has loaded.
-      await new Promise<void>((resolve, reject) => {
-        if (window.Square) {
-          resolve();
-          return;
-        }
-        script!.addEventListener("load", () => resolve());
-        script!.addEventListener("error", () =>
-          reject(new Error("Square SDK failed to load")),
-        );
-      });
-
+      // Stage 1: wait for the SDK script to load. A failure here is almost
+      // always CSP (script-src missing *.squarecdn.com) or a network block
+      // (corporate proxy / ad blocker / VPN). Surface the URL we tried.
       try {
+        await new Promise<void>((resolve, reject) => {
+          if (window.Square) {
+            resolve();
+            return;
+          }
+          script!.addEventListener("load", () => resolve());
+          script!.addEventListener("error", () =>
+            reject(new Error(`Square SDK script failed to load (${scriptSrc})`)),
+          );
+        });
+      } catch (e) {
+        console.error("[checkout] Square SDK load error:", e);
+        setError(
+          "Could not reach Square's payment SDK. If you're using an ad blocker or VPN, try disabling it for this page.",
+        );
+        return;
+      }
+
+      // Stage 2: initialize payments with the workspace's app + location.
+      // The most common failure here is empty / wrong app ID — e.g. the
+      // NEXT_PUBLIC_SQUARE_APPLICATION_ID env var wasn't set at build time,
+      // so the value baked into the bundle is "". Square's SDK rejects
+      // with a generic-looking error; we surface the exact message in the
+      // console and a useful one in the UI.
+      try {
+        if (!squareAppId || !squareLocationId) {
+          throw new Error(
+            `Missing credentials at runtime — squareAppId="${squareAppId}", squareLocationId="${squareLocationId}". The NEXT_PUBLIC_SQUARE_* env vars are baked in at build time; rebuild after setting them.`,
+          );
+        }
         const payments = await window.Square!.payments(
           squareAppId,
           squareLocationId,
@@ -94,17 +115,17 @@ export function CheckoutForm({
         cardRef.current = card;
         setSdkReady(true);
       } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        console.error("[checkout] Square SDK init error:", e);
         setError(
-          "Could not load the payment form. Please refresh the page and try again.",
+          `Could not initialize the payment form. Open the JS console for the underlying Square SDK error. ${
+            message ? `Details: ${message}` : ""
+          }`,
         );
       }
     }
 
-    init().catch(() => {
-      setError(
-        "Could not load the payment form. Please refresh the page and try again.",
-      );
-    });
+    init();
 
     return () => {
       cardRef.current?.destroy();

@@ -21,11 +21,21 @@ export default async function CheckoutPage() {
     redirect("/app/settings/billing");
   }
 
-  // These are NEXT_PUBLIC_* so they reach the client bundle safely.
+  // These are NEXT_PUBLIC_* so they reach the client bundle. They're baked
+  // in at BUILD time — setting them in Render after deploy isn't enough,
+  // a rebuild is required for the new values to reach the browser.
   const squareAppId = process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID ?? "";
   const squareLocationId = process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID ?? "";
   const squareEnv =
     process.env.SQUARE_ENVIRONMENT === "production" ? "production" : "sandbox";
+
+  // Fail fast & visibly if the public env vars didn't make it into the
+  // build. Otherwise the page renders a card form that throws "Could not
+  // load the payment form" the moment the Square SDK initializes, with
+  // no clue why for the operator.
+  const missingPublicEnv: string[] = [];
+  if (!squareAppId) missingPublicEnv.push("NEXT_PUBLIC_SQUARE_APPLICATION_ID");
+  if (!squareLocationId) missingPublicEnv.push("NEXT_PUBLIC_SQUARE_LOCATION_ID");
 
   return (
     <div className="mx-auto w-full max-w-lg px-8 py-16 space-y-8">
@@ -44,13 +54,44 @@ export default async function CheckoutPage() {
         </p>
       </header>
 
-      <CheckoutForm
-        workspaceId={ctx.workspace.id}
-        planVariationId={planVariationId}
-        squareAppId={squareAppId}
-        squareLocationId={squareLocationId}
-        squareEnv={squareEnv as "sandbox" | "production"}
-      />
+      {missingPublicEnv.length > 0 ? (
+        <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-5 text-sm">
+          <p className="font-medium text-destructive">
+            Payment provider isn't configured for this deployment.
+          </p>
+          <p className="mt-2 text-foreground">
+            The following environment variables are missing from the build:
+          </p>
+          <ul className="mt-2 list-disc pl-5 font-mono text-xs text-foreground">
+            {missingPublicEnv.map((v) => (
+              <li key={v}>{v}</li>
+            ))}
+          </ul>
+          <p className="mt-3 text-muted-foreground">
+            Set them in the hosting platform's environment, then trigger a
+            full rebuild — these are baked into the client bundle at build
+            time, so a runtime env change alone won't take effect.
+          </p>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Need help? Email{" "}
+            <a
+              className="font-medium text-foreground underline-offset-4 hover:underline"
+              href="mailto:hello@reclaimdata.ai"
+            >
+              hello@reclaimdata.ai
+            </a>
+            .
+          </p>
+        </div>
+      ) : (
+        <CheckoutForm
+          workspaceId={ctx.workspace.id}
+          planVariationId={planVariationId}
+          squareAppId={squareAppId}
+          squareLocationId={squareLocationId}
+          squareEnv={squareEnv as "sandbox" | "production"}
+        />
+      )}
     </div>
   );
 }

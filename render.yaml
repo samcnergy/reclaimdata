@@ -13,3 +13,29 @@ services:
         value: "20"
       # All other env vars (Supabase, Anthropic, Square, Brevo, etc.)
       # are set manually in the Render dashboard. See .env.example.
+      #
+      # ─── Payment provider (Square) — required for /app/settings/billing ──
+      # If any of these are missing or empty when the build runs, the
+      # subscribe page renders a "Payment provider isn't configured"
+      # banner instead of the card form. The NEXT_PUBLIC_* vars in
+      # particular are baked into the client bundle at BUILD time —
+      # setting them in Render after a deploy does NOT take effect
+      # until the next rebuild. Always trigger a manual rebuild after
+      # changing any NEXT_PUBLIC_* value.
+      #
+      # Server-side (used by Node):
+      #   SQUARE_ENVIRONMENT             "sandbox" | "production"
+      #   SQUARE_APPLICATION_ID          server app ID
+      #   SQUARE_ACCESS_TOKEN            server access token
+      #   SQUARE_LOCATION_ID             location for subscriptions
+      #   SQUARE_WEBHOOK_SIGNATURE_KEY   verifies inbound webhooks
+      #   SQUARE_PLAN_ID_PROFESSIONAL_MONTHLY   the live plan ID
+      #
+      # Client-side (baked into the bundle at build time):
+      #   NEXT_PUBLIC_SQUARE_APPLICATION_ID    must match SQUARE_APPLICATION_ID
+      #   NEXT_PUBLIC_SQUARE_LOCATION_ID       must match SQUARE_LOCATION_ID
+      #
+      # Production note: a sandbox application ID will NOT charge real
+      # cards. Before going live, swap all six values for a Square
+      # production application's credentials and set
+      # SQUARE_ENVIRONMENT=production.
