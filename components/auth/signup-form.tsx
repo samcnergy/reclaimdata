@@ -22,7 +22,9 @@ type FormValues = z.infer<typeof schema>;
 export function SignupForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") ?? "/app";
+  // New signups land on billing so they can subscribe right away.
+  // An explicit ?next= param overrides (e.g. invite links).
+  const next = params.get("next") ?? "/app/settings/billing";
   const [error, setError] = useState<string | null>(null);
   const [checkEmail, setCheckEmail] = useState<string | null>(null);
 
@@ -38,14 +40,20 @@ export function SignupForm() {
   async function onSubmit(values: FormValues) {
     setError(null);
     const supabase = createSupabaseBrowserClient();
-    const origin = window.location.origin;
+    // Use the canonical app URL from env rather than window.location.origin.
+    // Supabase only honours emailRedirectTo if the URL matches one of the
+    // configured Redirect URLs in the Supabase Auth dashboard; using a hard-
+    // coded env var keeps it predictable across preview deployments.
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
+      window.location.origin;
 
     const { data, error: authError } = await supabase.auth.signUp({
       email: values.email,
       password: values.password,
       options: {
         data: { full_name: values.fullName },
-        emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        emailRedirectTo: `${appUrl}/auth/callback?next=${encodeURIComponent(next)}`,
       },
     });
 
