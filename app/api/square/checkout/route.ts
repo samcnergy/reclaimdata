@@ -6,20 +6,25 @@ import { requireUser } from "@/lib/auth/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getSquareClient } from "@/lib/square/client";
 
+/**
+ * POST /api/square/checkout
+ *
+ * Subscription checkout flow:
+ *   1. Receive a Square Web Payments SDK card nonce from the client.
+ *   2. Create (or re-use) a Square customer record for the workspace.
+ *   3. Save the card on file via Square's Cards API (turns the nonce into a
+ *      reusable card_id that the Subscriptions API requires).
+ *   4. Create the subscription — the workspace plan is updated asynchronously
+ *      when Square fires the subscription.created webhook.
+ */
+
 const schema = z.object({
   workspaceId: z.string().uuid(),
   planVariationId: z.string().min(1),
-  cardId: z.string().min(1).optional(),
+  /** Nonce returned by `card.tokenize()` from the Square Web Payments SDK. */
+  cardNonce: z.string().min(1),
 });
 
-/**
- * Creates a Square subscription for the workspace. Square requires a
- * customer + a card on file before subscribing — for v1 we expect the
- * Web Payments SDK on the client to tokenize the card and pass the
- * card ID up.
- *
- * In sandbox you can also test with the "cnon:card-nonce-ok" stub.
- */
 export async function POST(request: Request) {
   const user = await requireUser();
   const body = await request.json().catch(() => null);
@@ -32,6 +37,8 @@ export async function POST(request: Request) {
   }
 
   const admin = createSupabaseAdminClient();
+
+  // ── 1. Load workspace ──────────────────────────────────────────────────────
   const { data: workspace } = await admin
     .from("workspaces")
     .select("id, name, square_customer_id, square_subscription_id, owner_id")
@@ -42,7 +49,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
   }
 
-  // Membership check: only owners/admins can change billing.
+  // Only owners / admins can change billing.
   const { data: member } = await admin
     .from("workspace_members")
     .select("role")
@@ -51,12 +58,31 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (!member || (member.role !== "owner" && member.role !== "admin")) {
-    return NextResponse.json({ error: "Only workspace owners can change billing" }, { status: 403 });
+    return NextResponse.json(
+      { error: "Only workspace owners can change billing" },
+      { status: 403 },
+    );
+  }
+
+  if (workspace.square_subscription_id) {
+    return NextResponse.json(
+      { error: "Workspace already has an active subscription" },
+      { status: 409 },
+    );
+  }
+
+  const locationId = process.env.SQUARE_LOCATION_ID;
+  if (!locationId) {
+    return NextResponse.json(
+      { error: "SQUARE_LOCATION_ID not configured" },
+      { status: 500 },
+    );
   }
 
   const square = getSquareClient();
-  let customerId = workspace.square_customer_id;
 
+  // ── 2. Create Square customer (idempotent — reuse if already exists) ───────
+  let customerId = workspace.square_customer_id;
   if (!customerId) {
     const { customer } = await square.customers.create({
       idempotencyKey: randomUUID(),
@@ -77,28 +103,48 @@ export async function POST(request: Request) {
       .eq("id", workspace.id);
   }
 
-  const locationId = process.env.SQUARE_LOCATION_ID;
-  if (!locationId) {
-    return NextResponse.json({ error: "SQUARE_LOCATION_ID not configured" }, { status: 500 });
+  // ── 3. Save card on file (nonce → reusable card_id) ───────────────────────
+  // Square's Subscriptions API requires a stored card_id, not a raw nonce.
+  const { card } = await square.cards.create({
+    idempotencyKey: randomUUID(),
+    sourceId: parsed.data.cardNonce,
+    card: { customerId },
+  });
+  if (!card?.id) {
+    return NextResponse.json(
+      { error: "Failed to save card on file" },
+      { status: 500 },
+    );
   }
 
-  const { subscription } = await square.subscriptions.create({
-    idempotencyKey: randomUUID(),
-    locationId,
-    planVariationId: parsed.data.planVariationId,
-    customerId,
-    cardId: parsed.data.cardId,
-  });
+  // ── 4. Create subscription ─────────────────────────────────────────────────
+  // workspace.plan is updated to "professional" by the subscription.created
+  // webhook — we intentionally don't optimistically update here so the DB is
+  // always driven by signed Square events.
+  let subscription;
+  try {
+    ({ subscription } = await square.subscriptions.create({
+      idempotencyKey: randomUUID(),
+      locationId,
+      planVariationId: parsed.data.planVariationId,
+      customerId,
+      cardId: card.id,
+    }));
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[square.checkout] subscriptions.create failed: ${msg}`);
+    return NextResponse.json(
+      { error: `Subscription create failed: ${msg}` },
+      { status: 500 },
+    );
+  }
 
   if (!subscription?.id) {
-    return NextResponse.json({ error: "Subscription create failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Subscription create failed" },
+      { status: 500 },
+    );
   }
 
-  // Workspace plan flips on the subscription.created webhook. We don't
-  // optimistically update here so the source of truth is always the
-  // signed webhook event.
-  return NextResponse.json({
-    subscriptionId: subscription.id,
-    customerId,
-  });
+  return NextResponse.json({ subscriptionId: subscription.id });
 }

@@ -76,13 +76,7 @@ export default async function BillingPage() {
                 disabled={!monthlyEnv}
                 asChild
               >
-                <a
-                  href={
-                    monthlyEnv
-                      ? `/api/square/checkout?workspaceId=${ctx.workspace.id}&planVariationId=${monthlyEnv}`
-                      : "#"
-                  }
-                >
+                <a href={monthlyEnv ? "/app/settings/billing/checkout" : "#"}>
                   Subscribe — $249 / month
                 </a>
               </Button>

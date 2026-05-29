@@ -2,10 +2,20 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SubscribedBanner } from "@/components/app/subscribed-banner";
 
-export default function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const justSubscribed = params["subscribed"] === "1";
+
   return (
     <div className="mx-auto w-full max-w-5xl px-8 py-10">
+      {justSubscribed && <SubscribedBanner />}
+
       <header className="mb-10">
         <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
           Dashboard
