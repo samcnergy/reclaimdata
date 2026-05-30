@@ -12,12 +12,30 @@ export async function GET(request: Request) {
   const code = url.searchParams.get("code");
   const next = url.searchParams.get("next") ?? "/app";
 
+  // Use the canonical public origin from env rather than request.url.
+  // Behind Render's load balancer, request.url carries the internal address
+  // (http://reclaimdata:10000/...) which would produce redirects to that
+  // internal host. Compute the origin once and reuse for both the success
+  // and the error paths.
+  const appOrigin =
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
+    (() => {
+      const u = new URL(request.url);
+      return `${u.protocol}//${u.host}`;
+    })();
+
   if (code) {
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) {
+      // Translate the most common Supabase error into something a user can
+      // actually act on. The raw message ("PKCE code verifier not found in
+      // storage. ...") is technically accurate but reads like a stack trace.
+      const friendly = /pkce code verifier not found/i.test(error.message)
+        ? "Your confirmation link couldn't be verified. This usually happens when the email is opened in a different browser than the one you signed up in, or after cookies were cleared. Please request a new link from the same browser."
+        : error.message;
       return NextResponse.redirect(
-        new URL(`/login?error=${encodeURIComponent(error.message)}`, request.url),
+        `${appOrigin}/login?error=${encodeURIComponent(friendly)}`,
       );
     }
   }
@@ -26,17 +44,6 @@ export async function GET(request: Request) {
   // protocol-relative URL (//evil.com) or an absolute URL (https://evil.com).
   const safePath =
     next.startsWith("/") && !next.startsWith("//") ? next : "/app";
-
-  // Use the canonical public origin from env rather than request.url.
-  // Behind Render's load balancer, request.url carries the internal address
-  // (http://reclaimdata:10000/...) which would produce a redirect to that
-  // internal host instead of the real public domain.
-  const appOrigin =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
-    (() => {
-      const u = new URL(request.url);
-      return `${u.protocol}//${u.host}`;
-    })();
 
   return NextResponse.redirect(`${appOrigin}${safePath}`);
 }

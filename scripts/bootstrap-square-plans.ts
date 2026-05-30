@@ -65,10 +65,15 @@ async function main() {
     console.log(`  ${spec.envKey} = ${variationId}`);
   }
 
-  // Write back to ~/reclaimdata-secrets/.env.local so the values land in
-  // the canonical ledger; the user pastes them into Render manually.
+  // When targeting SANDBOX, write back into ~/reclaimdata-secrets/.env.local
+  // so the canonical ledger stays in sync for local dev. When targeting
+  // PRODUCTION we DO NOT write the file — production secrets live only in
+  // Render's environment, and clobbering the local sandbox IDs would
+  // silently break local dev for whoever runs the script.
+  const isProd = process.env.SQUARE_ENVIRONMENT === "production";
   const ledgerPath = join(homedir(), "reclaimdata-secrets", ".env.local");
-  if (existsSync(ledgerPath)) {
+
+  if (!isProd && existsSync(ledgerPath)) {
     let text = readFileSync(ledgerPath, "utf8");
     for (const [key, val] of Object.entries(created)) {
       const re = new RegExp(`^${key}=.*$`, "m");
@@ -79,7 +84,13 @@ async function main() {
       }
     }
     writeFileSync(ledgerPath, text);
-    console.log(`\nUpdated ${ledgerPath}`);
+    console.log(`\nUpdated ${ledgerPath} (sandbox).`);
+  } else if (isProd) {
+    console.log("\nPRODUCTION run — .env.local NOT modified.");
+    console.log("Paste-ready block for Render's Environment tab:\n");
+    console.log("# ── Square production plan IDs ────────────────────────");
+    for (const [k, v] of Object.entries(created)) console.log(`${k}=${v}`);
+    console.log("# ──────────────────────────────────────────────────────");
   } else {
     console.log(`\nLedger not found at ${ledgerPath} — print the IDs above and paste them yourself.`);
   }
