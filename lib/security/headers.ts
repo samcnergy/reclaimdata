@@ -35,9 +35,23 @@ export function buildCspHeader(): string {
       "https://js.squareupsandbox.com",
       posthogHost,
     ],
-    "style-src": ["'self'", "'unsafe-inline'"],
+    "style-src": [
+      "'self'",
+      "'unsafe-inline'",
+      // Square Web Payments SDK injects card-wrapper.css from these
+      // origins. Without them card.attach() throws UnexpectedError and
+      // the card form never renders.
+      "https://web.squarecdn.com",
+      "https://sandbox.web.squarecdn.com",
+    ],
     "img-src": ["'self'", "data:", "blob:", supabaseUrl],
-    "font-src": ["'self'", "data:"],
+    "font-src": [
+      "'self'",
+      "data:",
+      // Square's card iframe loads webfonts from the same SDK CDN.
+      "https://web.squarecdn.com",
+      "https://sandbox.web.squarecdn.com",
+    ],
     "connect-src": [
       "'self'",
       supabaseUrl,
