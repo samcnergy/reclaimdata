@@ -37,12 +37,15 @@ export const PLANS: Record<Plan, PlanRules> = {
     handwrittenNoteSupport: false,
   },
   professional: {
-    customers: 15_000,
+    // Single live plan: matches the marketing copy and the in-app billing
+    // page ("$249/mo, up to 2,500 customers, 1 user, unlimited uploads,
+    // CSV export, priority processing, handwritten note support").
+    customers: 2_500,
     uploads: 0,
-    users: 5,
+    users: 1,
     csvExport: true,
     priorityProcessing: true,
-    handwrittenNoteSupport: false,
+    handwrittenNoteSupport: true,
   },
   legacy: {
     customers: 50_000,
