@@ -179,9 +179,12 @@ export function CheckoutForm({
       }
 
       // Success — the subscription is created. The webhook will flip
-      // workspace.plan to "professional" asynchronously. Send the user to
-      // their app dashboard now; the plan badge updates after the webhook fires.
-      router.push("/app?subscribed=1");
+      // workspace.plan to "professional" asynchronously (typically within a
+      // second or two). Send the user to /app/settings/billing — that route
+      // is allowed by the /app layout's paywall even while plan is still
+      // "free", so we avoid a race where the immediate redirect to /app
+      // bounces the user back to checkout before the webhook lands.
+      router.push("/app/settings/billing?subscribed=1");
       router.refresh();
     } catch {
       setError("Network error. Please check your connection and try again.");

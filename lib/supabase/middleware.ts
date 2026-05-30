@@ -10,8 +10,15 @@ import { createServerClient } from "@supabase/ssr";
  * downstream auth checks (requireUser) gate /app/* routes the same way
  * they would for a logged-out user.
  */
-export async function updateSupabaseSession(request: NextRequest) {
-  let response = NextResponse.next({ request });
+export async function updateSupabaseSession(
+  request: NextRequest,
+  requestHeaders?: Headers,
+) {
+  // When the caller passes an augmented headers set (e.g. proxy.ts adds
+  // x-pathname so server components can read the current path), forward
+  // those into the rewritten request rather than the original ones.
+  const headers = requestHeaders ?? request.headers;
+  let response = NextResponse.next({ request: { headers } });
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -29,7 +36,7 @@ export async function updateSupabaseSession(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value),
           );
-          response = NextResponse.next({ request });
+          response = NextResponse.next({ request: { headers } });
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options),
           );
