@@ -21,7 +21,27 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { SquareClient, SquareEnvironment } from "square";
 
+// Preserve any SQUARE_ENVIRONMENT / SQUARE_ACCESS_TOKEN that the operator
+// passed on the CLI (for one-shot production runs) before dotenv overrides
+// them with the sandbox values from .env.local. Without this, running
+// `SQUARE_ENVIRONMENT=production SQUARE_ACCESS_TOKEN=… npx tsx scripts/…`
+// silently falls back to sandbox because dotenv's override=true wins.
+const cliOverrides = {
+  SQUARE_ENVIRONMENT: process.env.SQUARE_ENVIRONMENT,
+  SQUARE_ACCESS_TOKEN: process.env.SQUARE_ACCESS_TOKEN,
+};
+
 config({ path: ".env.local", override: true });
+
+for (const [k, v] of Object.entries(cliOverrides)) {
+  if (v !== undefined) process.env[k] = v;
+}
+
+const runningMode =
+  process.env.SQUARE_ENVIRONMENT?.toLowerCase() === "production"
+    ? "PRODUCTION"
+    : "SANDBOX";
+console.log(`\n=== Bootstrap Square plans — mode: ${runningMode} ===\n`);
 
 type PlanSpec = {
   envKey: string;
