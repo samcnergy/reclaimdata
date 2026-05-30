@@ -45,7 +45,7 @@ async function main() {
   if (!token) throw new Error("SQUARE_ACCESS_TOKEN is not set");
 
   const env =
-    process.env.SQUARE_ENVIRONMENT === "production"
+    process.env.SQUARE_ENVIRONMENT?.toLowerCase() === "production"
       ? SquareEnvironment.Production
       : SquareEnvironment.Sandbox;
 
@@ -70,7 +70,7 @@ async function main() {
   // PRODUCTION we DO NOT write the file — production secrets live only in
   // Render's environment, and clobbering the local sandbox IDs would
   // silently break local dev for whoever runs the script.
-  const isProd = process.env.SQUARE_ENVIRONMENT === "production";
+  const isProd = process.env.SQUARE_ENVIRONMENT?.toLowerCase() === "production";
   const ledgerPath = join(homedir(), "reclaimdata-secrets", ".env.local");
 
   if (!isProd && existsSync(ledgerPath)) {

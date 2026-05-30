@@ -26,8 +26,12 @@ export default async function CheckoutPage() {
   // a rebuild is required for the new values to reach the browser.
   const squareAppId = process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID ?? "";
   const squareLocationId = process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID ?? "";
+  // Case-insensitive so "Production", "PRODUCTION", "production" all work.
+  // Square's own docs alternate between forms and operators copy verbatim.
   const squareEnv =
-    process.env.SQUARE_ENVIRONMENT === "production" ? "production" : "sandbox";
+    process.env.SQUARE_ENVIRONMENT?.toLowerCase() === "production"
+      ? "production"
+      : "sandbox";
 
   // Fail fast & visibly if the public env vars didn't make it into the
   // build. Otherwise the page renders a card form that throws "Could not
